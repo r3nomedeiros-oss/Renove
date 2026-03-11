@@ -29,11 +29,13 @@ function Dashboard() {
       
       // Últimos 7 dias (incluindo hoje)
       const hoje = new Date();
+      hoje.setHours(23, 59, 59, 999);
       const seteDiasAtras = new Date();
-      seteDiasAtras.setDate(hoje.getDate() - 6); // -6 para incluir 7 dias (hoje + 6 anteriores)
+      seteDiasAtras.setDate(hoje.getDate() - 6);
+      seteDiasAtras.setHours(0, 0, 0, 0);
       
       const ultimos7Dias = lancamentosResponse.data.filter(lanc => {
-        const dataLanc = new Date(lanc.data + 'T00:00:00'); // Adicionar hora para evitar problemas de timezone
+        const dataLanc = new Date(lanc.data + 'T12:00:00');
         return dataLanc >= seteDiasAtras && dataLanc <= hoje;
       });
       
@@ -46,31 +48,86 @@ function Dashboard() {
   };
 
   const prepararDadosGrafico = () => {
-    // Agrupar lançamentos por data e somar produção e perdas
-    const dadosPorDia = {};
+    // Criar array com os últimos 7 dias
+    const hoje = new Date();
+    const dias = [];
     
+    for (let i = 6; i >= 0; i--) {
+      const data = new Date();
+      data.setDate(hoje.getDate() - i);
+      const dataStr = data.toISOString().split('T')[0];
+      const dataFormatada = data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
+      
+      dias.push({
+        dataOriginal: dataStr,
+        data: dataFormatada,
+        producao: 0,
+        perdas: 0,
+        percentualPerdas: 0
+      });
+    }
+    
+    // Preencher com dados dos lançamentos
     lancamentos.forEach(lanc => {
-      const data = new Date(lanc.data + 'T00:00:00').toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
-      if (!dadosPorDia[data]) {
-        dadosPorDia[data] = { data, producao: 0, perdas: 0 };
+      const diaIndex = dias.findIndex(d => d.dataOriginal === lanc.data);
+      if (diaIndex !== -1) {
+        dias[diaIndex].producao += parseFloat(lanc.producao_total) || 0;
+        dias[diaIndex].perdas += parseFloat(lanc.perdas_total) || 0;
       }
-      dadosPorDia[data].producao += parseFloat(lanc.producao_total) || 0;
-      dadosPorDia[data].perdas += parseFloat(lanc.perdas_total) || 0;
     });
     
-    // Ordenar por data
-    return Object.values(dadosPorDia).sort((a, b) => {
-      const [diaA, mesA] = a.data.split('/');
-      const [diaB, mesB] = b.data.split('/');
-      const dataA = new Date(`2026-${mesA}-${diaA}`);
-      const dataB = new Date(`2026-${mesB}-${diaB}`);
-      return dataA - dataB;
+    // Calcular percentual de perdas para cada dia
+    dias.forEach(dia => {
+      const total = dia.producao + dia.perdas;
+      dia.percentualPerdas = total > 0 ? parseFloat(((dia.perdas / total) * 100).toFixed(1)) : 0;
     });
+    
+    return dias;
+  };
+
+  // Tooltip customizado para mostrar as informações na ordem correta
+  const CustomTooltip = ({ active, payload, label }) => {
+    if (active && payload && payload.length) {
+      // Ordenar para Produção, Perdas, % Perdas
+      const producao = payload.find(p => p.dataKey === 'producao');
+      const perdas = payload.find(p => p.dataKey === 'perdas');
+      const percentual = payload.find(p => p.dataKey === 'percentualPerdas');
+      
+      return (
+        <div style={{
+          background: 'white',
+          border: '1px solid #e2e8f0',
+          borderRadius: '8px',
+          padding: '12px',
+          boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+        }}>
+          <p style={{ fontWeight: '600', marginBottom: '8px', color: '#2d3748' }}>{label}</p>
+          {producao && (
+            <p style={{ color: '#1e40af', margin: '4px 0' }}>
+              Produção: <strong>{formatarKg(producao.value)} kg</strong>
+            </p>
+          )}
+          {perdas && (
+            <p style={{ color: '#f56565', margin: '4px 0' }}>
+              Perdas: <strong>{formatarKg(perdas.value)} kg</strong>
+            </p>
+          )}
+          {percentual && (
+            <p style={{ color: '#ed8936', margin: '4px 0' }}>
+              % Perdas: <strong>{percentual.value}%</strong>
+            </p>
+          )}
+        </div>
+      );
+    }
+    return null;
   };
 
   if (loading) {
     return <div className="loading">Carregando...</div>;
   }
+
+  const dadosGrafico = prepararDadosGrafico();
 
   return (
     <div>
@@ -120,33 +177,69 @@ function Dashboard() {
       <div className="card">
         <h2 style={{marginBottom: '20px'}}>Produção x Perdas (Últimos 7 Dias)</h2>
         
-        {lancamentos.length > 0 ? (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={prepararDadosGrafico()}>
+        {dadosGrafico.some(d => d.producao > 0 || d.perdas > 0) ? (
+          <ResponsiveContainer width="100%" height={350}>
+            <LineChart data={dadosGrafico}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="data" />
-              <YAxis label={{ value: 'kg', angle: -90, position: 'insideLeft' }} />
-              <Tooltip />
-              <Legend />
+              <YAxis 
+                yAxisId="left"
+                label={{ value: 'kg', angle: -90, position: 'insideLeft' }} 
+              />
+              <YAxis 
+                yAxisId="right" 
+                orientation="right"
+                label={{ value: '%', angle: 90, position: 'insideRight' }}
+                domain={[0, 100]}
+              />
+              <Tooltip content={<CustomTooltip />} />
+              <Legend 
+                formatter={(value) => {
+                  if (value === 'producao') return 'Produção (kg)';
+                  if (value === 'perdas') return 'Perdas (kg)';
+                  if (value === 'percentualPerdas') return '% Perdas';
+                  return value;
+                }}
+              />
               <Line 
+                yAxisId="left"
                 type="monotone" 
                 dataKey="producao" 
                 stroke="#1e40af" 
-                strokeWidth={2}
-                name="Produção (kg)" 
+                strokeWidth={3}
+                name="producao"
+                dot={{ fill: '#1e40af', strokeWidth: 2, r: 5 }}
+                activeDot={{ r: 8 }}
               />
               <Line 
+                yAxisId="left"
                 type="monotone" 
                 dataKey="perdas" 
                 stroke="#f56565" 
+                strokeWidth={3}
+                name="perdas"
+                dot={{ fill: '#f56565', strokeWidth: 2, r: 5 }}
+                activeDot={{ r: 8 }}
+              />
+              <Line 
+                yAxisId="right"
+                type="monotone" 
+                dataKey="percentualPerdas" 
+                stroke="#ed8936" 
                 strokeWidth={2}
-                name="Perdas (kg)" 
+                strokeDasharray="5 5"
+                name="percentualPerdas"
+                dot={{ fill: '#ed8936', strokeWidth: 2, r: 4 }}
+                activeDot={{ r: 6 }}
               />
             </LineChart>
           </ResponsiveContainer>
         ) : (
           <div className="empty-state">
-            <p>Sem dados para exibir no gráfico</p>
+            <p>Sem dados de produção nos últimos 7 dias</p>
+            <p style={{fontSize: '14px', color: '#718096', marginTop: '10px'}}>
+              Crie lançamentos para visualizar o gráfico
+            </p>
           </div>
         )}
       </div>

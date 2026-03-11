@@ -11,6 +11,11 @@ function EditarLancamento() {
   const [loading, setLoading] = useState(false);
   const [carregando, setCarregando] = useState(true);
   
+  // Variáveis carregadas do backend
+  const [turnos, setTurnos] = useState([]);
+  const [formatos, setFormatos] = useState([]);
+  const [cores, setCores] = useState([]);
+  
   const [lancamento, setLancamento] = useState({
     data: '',
     turno: 'A',
@@ -21,16 +26,25 @@ function EditarLancamento() {
   });
 
   useEffect(() => {
-    carregarLancamento();
+    carregarDados();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
-  const carregarLancamento = async () => {
+  const carregarDados = async () => {
     try {
-      const response = await axios.get(`${API_URL}/lancamentos/${id}`);
-      setLancamento(response.data);
+      const [lancamentoRes, turnosRes, formatosRes, coresRes] = await Promise.all([
+        axios.get(`${API_URL}/lancamentos/${id}`),
+        axios.get(`${API_URL}/variaveis/turnos`),
+        axios.get(`${API_URL}/variaveis/formatos`),
+        axios.get(`${API_URL}/variaveis/cores`)
+      ]);
+      
+      setLancamento(lancamentoRes.data);
+      setTurnos((turnosRes.data || []).filter(t => t.ativo));
+      setFormatos((formatosRes.data || []).filter(f => f.ativo));
+      setCores((coresRes.data || []).filter(c => c.ativo));
     } catch (error) {
-      console.error('Erro ao carregar lançamento:', error);
+      console.error('Erro ao carregar dados:', error);
       alert('Erro ao carregar lançamento');
       navigate('/lancamentos');
     } finally {
@@ -111,9 +125,17 @@ function EditarLancamento() {
                 onChange={(e) => setLancamento({...lancamento, turno: e.target.value})}
                 required
               >
-                <option value="A">Turno A</option>
-                <option value="B">Turno B</option>
-                <option value="Administrativo">Administrativo</option>
+                {turnos.length > 0 ? (
+                  turnos.map(turno => (
+                    <option key={turno.id} value={turno.nome}>{turno.nome}</option>
+                  ))
+                ) : (
+                  <>
+                    <option value="A">Turno A</option>
+                    <option value="B">Turno B</option>
+                    <option value="Administrativo">Administrativo</option>
+                  </>
+                )}
               </select>
             </div>
 
@@ -165,42 +187,71 @@ function EditarLancamento() {
           </div>
 
           {lancamento.itens.map((item, index) => (
-            <div key={index} className="item-row" style={{position: 'relative'}}>
-              {lancamento.itens.length > 1 && (
-                <button
-                  type="button"
-                  className="btn btn-danger"
-                  onClick={() => removerItem(index)}
-                  style={{position: 'absolute', top: '10px', right: '10px'}}
-                >
-                  <Trash2 size={16} />
-                </button>
-              )}
-              
-              <div className="form-group">
-                <label>Formato</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={item.formato}
-                  onChange={(e) => atualizarItem(index, 'formato', e.target.value)}
-                  required
-                />
+            <div key={index} style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 36px', gap: '10px', alignItems: 'end', background: '#f8fafc', padding: '12px', borderRadius: '8px', marginBottom: '10px', border: '1px solid #e2e8f0'}}>
+              <div className="form-group" style={{marginBottom: '0'}}>
+                <label style={{fontSize: '12px', marginBottom: '4px'}}>Formato</label>
+                {formatos.length > 0 ? (
+                  <select
+                    className="form-control"
+                    value={item.formato}
+                    onChange={(e) => atualizarItem(index, 'formato', e.target.value)}
+                    required
+                    style={{fontSize: '12px', padding: '8px'}}
+                  >
+                    <option value="">Selecione...</option>
+                    {formatos.map(formato => (
+                      <option key={formato.id} value={formato.nome}>{formato.nome}</option>
+                    ))}
+                    {/* Mostrar o valor atual se não estiver na lista */}
+                    {item.formato && !formatos.find(f => f.nome === item.formato) && (
+                      <option value={item.formato}>{item.formato}</option>
+                    )}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={item.formato}
+                    onChange={(e) => atualizarItem(index, 'formato', e.target.value)}
+                    required
+                    style={{fontSize: '12px', padding: '8px'}}
+                  />
+                )}
               </div>
 
-              <div className="form-group">
-                <label>Cor</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={item.cor}
-                  onChange={(e) => atualizarItem(index, 'cor', e.target.value)}
-                  required
-                />
+              <div className="form-group" style={{marginBottom: '0'}}>
+                <label style={{fontSize: '12px', marginBottom: '4px'}}>Cor</label>
+                {cores.length > 0 ? (
+                  <select
+                    className="form-control"
+                    value={item.cor}
+                    onChange={(e) => atualizarItem(index, 'cor', e.target.value)}
+                    required
+                    style={{fontSize: '12px', padding: '8px'}}
+                  >
+                    <option value="">Selecione...</option>
+                    {cores.map(cor => (
+                      <option key={cor.id} value={cor.nome}>{cor.nome}</option>
+                    ))}
+                    {/* Mostrar o valor atual se não estiver na lista */}
+                    {item.cor && !cores.find(c => c.nome === item.cor) && (
+                      <option value={item.cor}>{item.cor}</option>
+                    )}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={item.cor}
+                    onChange={(e) => atualizarItem(index, 'cor', e.target.value)}
+                    required
+                    style={{fontSize: '12px', padding: '8px'}}
+                  />
+                )}
               </div>
 
-              <div className="form-group">
-                <label>Pacote (kg)</label>
+              <div className="form-group" style={{marginBottom: '0'}}>
+                <label style={{fontSize: '12px', marginBottom: '4px'}}>Pacote (kg)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -208,11 +259,12 @@ function EditarLancamento() {
                   value={item.pacote_kg}
                   onChange={(e) => atualizarItem(index, 'pacote_kg', e.target.value)}
                   required
+                  style={{fontSize: '12px', padding: '8px'}}
                 />
               </div>
 
-              <div className="form-group">
-                <label>Produção (kg)</label>
+              <div className="form-group" style={{marginBottom: '0'}}>
+                <label style={{fontSize: '12px', marginBottom: '4px'}}>Produção (kg)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -220,8 +272,21 @@ function EditarLancamento() {
                   value={item.producao_kg}
                   onChange={(e) => atualizarItem(index, 'producao_kg', e.target.value)}
                   required
+                  style={{fontSize: '12px', padding: '8px'}}
                 />
               </div>
+
+              {lancamento.itens.length > 1 && (
+                <button
+                  type="button"
+                  className="btn btn-danger"
+                  onClick={() => removerItem(index)}
+                  style={{padding: '8px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '36px'}}
+                  title="Remover item"
+                >
+                  <Trash2 size={14} />
+                </button>
+              )}
             </div>
           ))}
         </div>

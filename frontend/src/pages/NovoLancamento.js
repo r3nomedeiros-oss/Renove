@@ -9,6 +9,12 @@ function NovoLancamento() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   
+  // Variáveis carregadas do backend
+  const [turnos, setTurnos] = useState([]);
+  const [formatos, setFormatos] = useState([]);
+  const [cores, setCores] = useState([]);
+  const [loadingVars, setLoadingVars] = useState(true);
+  
   const [lancamento, setLancamento] = useState({
     data: new Date().toISOString().split('T')[0],
     turno: 'A',
@@ -20,7 +26,41 @@ function NovoLancamento() {
     ]
   });
 
-  // Atualizar hora automaticamente a cada minuto (sem segundos)
+  // Carregar variáveis do backend
+  useEffect(() => {
+    const carregarVariaveis = async () => {
+      try {
+        const [turnosRes, formatosRes, coresRes] = await Promise.all([
+          axios.get(`${API_URL}/variaveis/turnos`),
+          axios.get(`${API_URL}/variaveis/formatos`),
+          axios.get(`${API_URL}/variaveis/cores`)
+        ]);
+        
+        const turnosAtivos = (turnosRes.data || []).filter(t => t.ativo);
+        const formatosAtivos = (formatosRes.data || []).filter(f => f.ativo);
+        const coresAtivas = (coresRes.data || []).filter(c => c.ativo);
+        
+        setTurnos(turnosAtivos);
+        setFormatos(formatosAtivos);
+        setCores(coresAtivas);
+        
+        // Definir turno padrão
+        if (turnosAtivos.length > 0 && !lancamento.turno) {
+          setLancamento(prev => ({...prev, turno: turnosAtivos[0].nome}));
+        }
+      } catch (error) {
+        console.error('Erro ao carregar variáveis:', error);
+        // Usar valores padrão se não conseguir carregar
+        setTurnos([{id: '1', nome: 'A'}, {id: '2', nome: 'B'}, {id: '3', nome: 'Administrativo'}]);
+      } finally {
+        setLoadingVars(false);
+      }
+    };
+    
+    carregarVariaveis();
+  }, []);
+
+  // Atualizar hora automaticamente a cada minuto
   useEffect(() => {
     const interval = setInterval(() => {
       setLancamento(prev => ({
@@ -65,6 +105,10 @@ function NovoLancamento() {
     }
   };
 
+  if (loadingVars) {
+    return <div className="loading">Carregando formulário...</div>;
+  }
+
   return (
     <div>
       <div className="page-header">
@@ -96,9 +140,17 @@ function NovoLancamento() {
                 onChange={(e) => setLancamento({...lancamento, turno: e.target.value})}
                 required
               >
-                <option value="A">Turno A</option>
-                <option value="B">Turno B</option>
-                <option value="Administrativo">Administrativo</option>
+                {turnos.length > 0 ? (
+                  turnos.map(turno => (
+                    <option key={turno.id} value={turno.nome}>{turno.nome}</option>
+                  ))
+                ) : (
+                  <>
+                    <option value="A">Turno A</option>
+                    <option value="B">Turno B</option>
+                    <option value="Administrativo">Administrativo</option>
+                  </>
+                )}
               </select>
             </div>
           </div>
@@ -144,28 +196,58 @@ function NovoLancamento() {
             <div key={index} style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 36px', gap: '10px', alignItems: 'end', background: '#f8fafc', padding: '12px', borderRadius: '8px', marginBottom: '10px', border: '1px solid #e2e8f0'}}>
               <div className="form-group" style={{marginBottom: '0'}}>
                 <label style={{fontSize: '12px', marginBottom: '4px'}}>Formato</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={item.formato}
-                  onChange={(e) => atualizarItem(index, 'formato', e.target.value)}
-                  required
-                  placeholder="Ex: 30x40"
-                  style={{fontSize: '12px', padding: '8px'}}
-                />
+                {formatos.length > 0 ? (
+                  <select
+                    className="form-control"
+                    value={item.formato}
+                    onChange={(e) => atualizarItem(index, 'formato', e.target.value)}
+                    required
+                    style={{fontSize: '12px', padding: '8px'}}
+                  >
+                    <option value="">Selecione...</option>
+                    {formatos.map(formato => (
+                      <option key={formato.id} value={formato.nome}>{formato.nome}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={item.formato}
+                    onChange={(e) => atualizarItem(index, 'formato', e.target.value)}
+                    required
+                    placeholder="Ex: 30x40"
+                    style={{fontSize: '12px', padding: '8px'}}
+                  />
+                )}
               </div>
 
               <div className="form-group" style={{marginBottom: '0'}}>
                 <label style={{fontSize: '12px', marginBottom: '4px'}}>Cor</label>
-                <input
-                  type="text"
-                  className="form-control"
-                  value={item.cor}
-                  onChange={(e) => atualizarItem(index, 'cor', e.target.value)}
-                  required
-                  placeholder="Ex: Azul"
-                  style={{fontSize: '12px', padding: '8px'}}
-                />
+                {cores.length > 0 ? (
+                  <select
+                    className="form-control"
+                    value={item.cor}
+                    onChange={(e) => atualizarItem(index, 'cor', e.target.value)}
+                    required
+                    style={{fontSize: '12px', padding: '8px'}}
+                  >
+                    <option value="">Selecione...</option>
+                    {cores.map(cor => (
+                      <option key={cor.id} value={cor.nome}>{cor.nome}</option>
+                    ))}
+                  </select>
+                ) : (
+                  <input
+                    type="text"
+                    className="form-control"
+                    value={item.cor}
+                    onChange={(e) => atualizarItem(index, 'cor', e.target.value)}
+                    required
+                    placeholder="Ex: Azul"
+                    style={{fontSize: '12px', padding: '8px'}}
+                  />
+                )}
               </div>
 
               <div className="form-group" style={{marginBottom: '0'}}>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
-import { Eye, Edit, Trash2, FileText, FileSpreadsheet } from 'lucide-react';
+import { Eye, Edit, Trash2, FileText, FileSpreadsheet, Filter, X } from 'lucide-react';
 
 const API_URL = (process.env.REACT_APP_BACKEND_URL || '') + '/api';
 
@@ -12,20 +12,51 @@ const formatarKg = (valor) => {
 function Lancamentos() {
   const [lancamentos, setLancamentos] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Filtros de data
+  const [dataInicio, setDataInicio] = useState('');
+  const [dataFim, setDataFim] = useState('');
+  const [filtroAtivo, setFiltroAtivo] = useState(false);
 
   useEffect(() => {
     carregarLancamentos();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const carregarLancamentos = async () => {
+  const carregarLancamentos = async (inicio = '', fim = '') => {
+    setLoading(true);
     try {
-      const response = await axios.get(`${API_URL}/lancamentos`);
+      let url = `${API_URL}/lancamentos`;
+      const params = new URLSearchParams();
+      
+      if (inicio) params.append('data_inicio', inicio);
+      if (fim) params.append('data_fim', fim);
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
+      const response = await axios.get(url);
       setLancamentos(response.data);
     } catch (error) {
       console.error('Erro ao carregar lançamentos:', error);
     } finally {
       setLoading(false);
     }
+  };
+
+  const aplicarFiltro = () => {
+    if (dataInicio || dataFim) {
+      carregarLancamentos(dataInicio, dataFim);
+      setFiltroAtivo(true);
+    }
+  };
+
+  const limparFiltro = () => {
+    setDataInicio('');
+    setDataFim('');
+    setFiltroAtivo(false);
+    carregarLancamentos();
   };
 
   const deletarLancamento = async (id) => {
@@ -36,7 +67,7 @@ function Lancamentos() {
     try {
       await axios.delete(`${API_URL}/lancamentos/${id}`);
       alert('Lançamento excluído com sucesso!');
-      carregarLancamentos();
+      carregarLancamentos(dataInicio, dataFim);
     } catch (error) {
       console.error('Erro ao excluir lançamento:', error);
       alert('Erro ao excluir lançamento');
@@ -50,11 +81,12 @@ function Lancamentos() {
 
   const formatarHora = (hora) => {
     if (!hora) return '';
-    return hora.substring(0, 5); // Garante que mostre apenas HH:mm
+    return hora.substring(0, 5);
   };
 
   const exportarHistoricoPDF = () => {
     const dataAtual = new Date().toLocaleDateString('pt-BR');
+    const periodoTexto = filtroAtivo ? `Período: ${dataInicio ? formatarData(dataInicio) : 'Início'} a ${dataFim ? formatarData(dataFim) : 'Fim'}` : 'Todos os lançamentos';
     const conteudo = `
 <!DOCTYPE html>
 <html>
@@ -64,6 +96,7 @@ function Lancamentos() {
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; color: #2d3748; }
     h1 { color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 10px; }
+    .periodo { color: #718096; margin-bottom: 20px; }
     table { width: 100%; border-collapse: collapse; margin-top: 20px; }
     th, td { padding: 10px; text-align: left; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
     th { background: #f7fafc; font-weight: 600; }
@@ -73,6 +106,7 @@ function Lancamentos() {
 <body>
   <h1>Histórico de Produção - PolyTrack</h1>
   <p>Gerado em: ${dataAtual}</p>
+  <p class="periodo">${periodoTexto}</p>
   <table>
     <thead>
       <tr>
@@ -146,13 +180,57 @@ function Lancamentos() {
         </div>
       </div>
 
+      {/* Filtros de Data */}
+      <div className="card" style={{marginBottom: '20px'}}>
+        <div style={{display: 'flex', alignItems: 'center', gap: '15px', flexWrap: 'wrap'}}>
+          <Filter size={20} color="#667eea" />
+          <div className="form-group" style={{marginBottom: 0, minWidth: '150px'}}>
+            <label style={{fontSize: '12px', marginBottom: '4px'}}>Data Início</label>
+            <input
+              type="date"
+              className="form-control"
+              value={dataInicio}
+              onChange={(e) => setDataInicio(e.target.value)}
+              style={{padding: '8px'}}
+            />
+          </div>
+          <div className="form-group" style={{marginBottom: 0, minWidth: '150px'}}>
+            <label style={{fontSize: '12px', marginBottom: '4px'}}>Data Fim</label>
+            <input
+              type="date"
+              className="form-control"
+              value={dataFim}
+              onChange={(e) => setDataFim(e.target.value)}
+              style={{padding: '8px'}}
+            />
+          </div>
+          <div style={{display: 'flex', gap: '10px', alignItems: 'flex-end', marginTop: '18px'}}>
+            <button onClick={aplicarFiltro} className="btn btn-primary" style={{padding: '8px 15px'}}>
+              Filtrar
+            </button>
+            {filtroAtivo && (
+              <button onClick={limparFiltro} className="btn btn-secondary" style={{padding: '8px 15px'}}>
+                <X size={14} /> Limpar
+              </button>
+            )}
+          </div>
+          {filtroAtivo && (
+            <span style={{fontSize: '13px', color: '#667eea', fontWeight: '500', marginLeft: 'auto'}}>
+              Filtro ativo: {lancamentos.length} resultado(s)
+            </span>
+          )}
+        </div>
+      </div>
+
       {lancamentos.length === 0 ? (
         <div className="card empty-state">
           <h3>Nenhum lançamento encontrado</h3>
-          <p>Comece criando um novo lançamento de produção</p>
-          <Link to="/novo-lancamento" className="btn btn-primary" style={{marginTop: '20px'}}>
-            Novo Lançamento
-          </Link>
+          <p>{filtroAtivo ? 'Nenhum lançamento no período selecionado' : 'Comece criando um novo lançamento de produção'}</p>
+          {!filtroAtivo && (
+            <Link to="/novo-lancamento" className="btn btn-primary" style={{marginTop: '20px'}}>
+              Novo Lançamento
+            </Link>
+          )}
         </div>
       ) : (
         <div className="card">

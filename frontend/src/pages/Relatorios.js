@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { FileText, FileSpreadsheet, ChevronDown, ChevronUp, Package } from 'lucide-react';
 
 const API_URL = (process.env.REACT_APP_BACKEND_URL || '') + '/api';
 
@@ -14,6 +14,7 @@ function Relatorios() {
   const [dataFim, setDataFim] = useState('');
   const [relatorio, setRelatorio] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [itensExpandido, setItensExpandido] = useState(false);
 
   useEffect(() => {
     if (periodo !== 'customizado') {
@@ -51,6 +52,33 @@ function Relatorios() {
     
     const dataAtual = new Date().toLocaleDateString('pt-BR');
     const periodoTexto = periodo === 'customizado' ? `${dataInicio} a ${dataFim}` : periodo.charAt(0).toUpperCase() + periodo.slice(1);
+    
+    // Seção de itens só aparece se expandido
+    const itensSection = itensExpandido && relatorio.itens_por_formato_cor && relatorio.itens_por_formato_cor.length > 0 ? `
+      <h2>Produção por Itens (Formato e Cor)</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Formato</th>
+            <th>Cor</th>
+            <th>Produção Total (kg)</th>
+            <th>Pacote Total (kg)</th>
+            <th>Qtd. Lançamentos</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${relatorio.itens_por_formato_cor.map(item => `
+            <tr>
+              <td>${item.formato}</td>
+              <td>${item.cor}</td>
+              <td>${formatarKg(item.producao_total)}</td>
+              <td>${formatarKg(item.pacote_total)}</td>
+              <td>${item.quantidade_lancamentos}</td>
+            </tr>
+          `).join('')}
+        </tbody>
+      </table>
+    ` : '';
     
     const conteudo = `
 <!DOCTYPE html>
@@ -112,6 +140,8 @@ function Relatorios() {
     </tbody>
   </table>
 
+  ${itensSection}
+
   <div class="footer">PolyTrack - Sistema de Controle de Produção</div>
   
   <script>
@@ -126,10 +156,6 @@ function Relatorios() {
     
     const blob = new Blob([conteudo], { type: 'text/html' });
     const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.target = '_blank';
-    // Em vez de forçar download do HTML, abrimos para impressão que é o comportamento esperado para PDF no navegador
     window.open(url, '_blank');
   };
 
@@ -149,6 +175,15 @@ function Relatorios() {
     Object.entries(relatorio.por_turno).forEach(([turno, dados]) => {
       csv += `Turno ${turno};${formatarKg(dados.producao)};${formatarKg(dados.perdas)};${dados.percentual_perdas}%;${formatarKg(dados.media_diaria)};${dados.dias_produzidos}\n`;
     });
+    
+    // Adicionar itens se expandido
+    if (itensExpandido && relatorio.itens_por_formato_cor && relatorio.itens_por_formato_cor.length > 0) {
+      csv += `\nPRODUÇÃO POR ITENS (FORMATO E COR)\n`;
+      csv += `Formato;Cor;Produção Total (kg);Pacote Total (kg);Qtd. Lançamentos\n`;
+      relatorio.itens_por_formato_cor.forEach(item => {
+        csv += `${item.formato};${item.cor};${formatarKg(item.producao_total)};${formatarKg(item.pacote_total)};${item.quantidade_lancamentos}\n`;
+      });
+    }
     
     const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
@@ -247,6 +282,68 @@ function Relatorios() {
                 </tbody>
               </table>
             </div>
+          </div>
+
+          {/* Seção de Produção por Itens - Minimizada por padrão */}
+          <div className="card">
+            <div 
+              onClick={() => setItensExpandido(!itensExpandido)}
+              style={{
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center', 
+                cursor: 'pointer',
+                padding: '10px 0'
+              }}
+            >
+              <h2 style={{margin: 0, display: 'flex', alignItems: 'center', gap: '10px'}}>
+                <Package size={24} />
+                Produção por Itens (Formato e Cor)
+                {relatorio.itens_por_formato_cor && (
+                  <span style={{fontSize: '14px', fontWeight: 'normal', color: '#718096'}}>
+                    ({relatorio.itens_por_formato_cor.length} itens)
+                  </span>
+                )}
+              </h2>
+              <button className="btn btn-secondary" style={{padding: '8px 12px'}}>
+                {itensExpandido ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              </button>
+            </div>
+            
+            {itensExpandido && (
+              <div style={{marginTop: '20px'}}>
+                {relatorio.itens_por_formato_cor && relatorio.itens_por_formato_cor.length > 0 ? (
+                  <div className="table-container">
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Formato</th>
+                          <th>Cor</th>
+                          <th>Produção Total (kg)</th>
+                          <th>Pacote Total (kg)</th>
+                          <th>Qtd. Lançamentos</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {relatorio.itens_por_formato_cor.map((item, index) => (
+                          <tr key={index}>
+                            <td><strong>{item.formato}</strong></td>
+                            <td>{item.cor}</td>
+                            <td style={{fontWeight: '600', color: '#48bb78'}}>{formatarKg(item.producao_total)} kg</td>
+                            <td>{formatarKg(item.pacote_total)} kg</td>
+                            <td>{item.quantidade_lancamentos}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="empty-state" style={{padding: '30px', textAlign: 'center'}}>
+                    <p>Nenhum item registrado no período</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         </>
       )}
