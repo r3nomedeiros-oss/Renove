@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Plus, Trash2, Edit2, Check, X, Settings } from 'lucide-react';
+import { Plus, Trash2, Edit2, Check, X, Settings, ChevronUp, ChevronDown } from 'lucide-react';
 
 const API_URL = (process.env.REACT_APP_BACKEND_URL || '') + '/api';
 
@@ -41,6 +41,36 @@ function Variaveis() {
     }
   };
 
+  // Função genérica para mover item
+  const moverItem = async (items, setItems, tipo, index, direcao) => {
+    if ((direcao === -1 && index === 0) || (direcao === 1 && index === items.length - 1)) {
+      return; // Não pode mover além dos limites
+    }
+
+    const newItems = [...items];
+    const temp = newItems[index];
+    newItems[index] = newItems[index + direcao];
+    newItems[index + direcao] = temp;
+
+    // Atualizar ordem de todos os itens
+    const itensComOrdem = newItems.map((item, idx) => ({
+      ...item,
+      ordem: idx
+    }));
+
+    setItems(itensComOrdem);
+
+    // Salvar no backend
+    try {
+      await axios.put(`${API_URL}/variaveis/${tipo}/reordenar`, {
+        itens: itensComOrdem.map(item => ({ id: item.id, ordem: item.ordem }))
+      });
+    } catch (error) {
+      console.error('Erro ao reordenar:', error);
+      carregarDados(); // Recarregar em caso de erro
+    }
+  };
+
   // Funções para Turnos
   const adicionarTurno = async () => {
     if (!novoTurno.trim()) return;
@@ -63,10 +93,10 @@ function Variaveis() {
     }
   };
 
-  const atualizarTurno = async (id) => {
+  const atualizarTurno = async (id, ordem) => {
     if (!editingValue.trim()) return;
     try {
-      await axios.put(`${API_URL}/variaveis/turnos/${id}`, { nome: editingValue, ativo: true });
+      await axios.put(`${API_URL}/variaveis/turnos/${id}`, { nome: editingValue, ativo: true, ordem: ordem || 0 });
       setEditingId(null);
       setEditingValue('');
       carregarDados();
@@ -97,10 +127,10 @@ function Variaveis() {
     }
   };
 
-  const atualizarFormato = async (id) => {
+  const atualizarFormato = async (id, ordem) => {
     if (!editingValue.trim()) return;
     try {
-      await axios.put(`${API_URL}/variaveis/formatos/${id}`, { nome: editingValue, ativo: true });
+      await axios.put(`${API_URL}/variaveis/formatos/${id}`, { nome: editingValue, ativo: true, ordem: ordem || 0 });
       setEditingId(null);
       setEditingValue('');
       carregarDados();
@@ -131,10 +161,10 @@ function Variaveis() {
     }
   };
 
-  const atualizarCor = async (id) => {
+  const atualizarCor = async (id, ordem) => {
     if (!editingValue.trim()) return;
     try {
-      await axios.put(`${API_URL}/variaveis/cores/${id}`, { nome: editingValue, ativo: true });
+      await axios.put(`${API_URL}/variaveis/cores/${id}`, { nome: editingValue, ativo: true, ordem: ordem || 0 });
       setEditingId(null);
       setEditingValue('');
       carregarDados();
@@ -157,7 +187,7 @@ function Variaveis() {
     return <div className="loading">Carregando...</div>;
   }
 
-  const renderList = (items, tipo, novoValor, setNovoValor, adicionar, deletar, atualizar) => (
+  const renderList = (items, setItems, tipo, novoValor, setNovoValor, adicionar, deletar, atualizar) => (
     <div>
       {/* Formulário de adicionar */}
       <div style={{display: 'flex', gap: '10px', marginBottom: '20px'}}>
@@ -175,6 +205,11 @@ function Variaveis() {
         </button>
       </div>
 
+      {/* Dica de ordenação */}
+      <div style={{fontSize: '13px', color: '#718096', marginBottom: '15px', display: 'flex', alignItems: 'center', gap: '5px'}}>
+        <ChevronUp size={14} /><ChevronDown size={14} /> Use as setas para ordenar os itens
+      </div>
+
       {/* Lista de itens */}
       <div style={{display: 'flex', flexDirection: 'column', gap: '8px'}}>
         {items.length === 0 ? (
@@ -182,7 +217,7 @@ function Variaveis() {
             <p>Nenhum {tipo} cadastrado</p>
           </div>
         ) : (
-          items.map((item) => (
+          items.map((item, index) => (
             <div
               key={item.id}
               style={{
@@ -195,6 +230,46 @@ function Variaveis() {
                 border: '1px solid #e2e8f0'
               }}
             >
+              {/* Botões de ordenação */}
+              <div style={{display: 'flex', flexDirection: 'column', gap: '2px', marginRight: '12px'}}>
+                <button
+                  onClick={() => moverItem(items, setItems, tipo + 's', index, -1)}
+                  disabled={index === 0}
+                  style={{
+                    background: index === 0 ? '#e2e8f0' : '#667eea',
+                    color: index === 0 ? '#a0aec0' : 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '2px 6px',
+                    cursor: index === 0 ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  title="Mover para cima"
+                >
+                  <ChevronUp size={14} />
+                </button>
+                <button
+                  onClick={() => moverItem(items, setItems, tipo + 's', index, 1)}
+                  disabled={index === items.length - 1}
+                  style={{
+                    background: index === items.length - 1 ? '#e2e8f0' : '#667eea',
+                    color: index === items.length - 1 ? '#a0aec0' : 'white',
+                    border: 'none',
+                    borderRadius: '4px',
+                    padding: '2px 6px',
+                    cursor: index === items.length - 1 ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}
+                  title="Mover para baixo"
+                >
+                  <ChevronDown size={14} />
+                </button>
+              </div>
+
               {editingId === item.id ? (
                 <div style={{display: 'flex', gap: '10px', flex: 1}}>
                   <input
@@ -202,11 +277,11 @@ function Variaveis() {
                     className="form-control"
                     value={editingValue}
                     onChange={(e) => setEditingValue(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && atualizar(item.id)}
+                    onKeyPress={(e) => e.key === 'Enter' && atualizar(item.id, item.ordem)}
                     style={{flex: 1}}
                     autoFocus
                   />
-                  <button onClick={() => atualizar(item.id)} className="btn btn-success" style={{padding: '8px 12px'}}>
+                  <button onClick={() => atualizar(item.id, item.ordem)} className="btn btn-success" style={{padding: '8px 12px'}}>
                     <Check size={16} />
                   </button>
                   <button onClick={cancelEditing} className="btn btn-secondary" style={{padding: '8px 12px'}}>
@@ -215,7 +290,7 @@ function Variaveis() {
                 </div>
               ) : (
                 <>
-                  <span style={{fontWeight: '500', fontSize: '15px'}}>{item.nome}</span>
+                  <span style={{fontWeight: '500', fontSize: '15px', flex: 1}}>{item.nome}</span>
                   <div style={{display: 'flex', gap: '8px'}}>
                     <button
                       onClick={() => startEditing(item.id, item.nome)}
@@ -275,9 +350,9 @@ function Variaveis() {
         </div>
 
         {/* Conteúdo das Tabs */}
-        {activeTab === 'turnos' && renderList(turnos, 'turno', novoTurno, setNovoTurno, adicionarTurno, deletarTurno, atualizarTurno)}
-        {activeTab === 'formatos' && renderList(formatos, 'formato', novoFormato, setNovoFormato, adicionarFormato, deletarFormato, atualizarFormato)}
-        {activeTab === 'cores' && renderList(cores, 'cor', novaCor, setNovaCor, adicionarCor, deletarCor, atualizarCor)}
+        {activeTab === 'turnos' && renderList(turnos, setTurnos, 'turno', novoTurno, setNovoTurno, adicionarTurno, deletarTurno, atualizarTurno)}
+        {activeTab === 'formatos' && renderList(formatos, setFormatos, 'formato', novoFormato, setNovoFormato, adicionarFormato, deletarFormato, atualizarFormato)}
+        {activeTab === 'cores' && renderList(cores, setCores, 'cor', novaCor, setNovaCor, adicionarCor, deletarCor, atualizarCor)}
       </div>
     </div>
   );

@@ -96,13 +96,18 @@ class LancamentoResponse(BaseModel):
 class VariavelCreate(BaseModel):
     nome: str
     ativo: bool = True
+    ordem: int = 0
 
 class VariavelResponse(BaseModel):
     model_config = ConfigDict(extra="ignore")
     id: str
     nome: str
     ativo: bool
+    ordem: int = 0
     created_at: Optional[datetime] = None
+
+class ReordenarRequest(BaseModel):
+    itens: List[dict]  # Lista de {id: str, ordem: int}
 
 # ==================== AUTH ROUTES ====================
 
@@ -455,7 +460,7 @@ async def get_relatorios(periodo: str = "mensal", data_inicio: Optional[str] = N
 @api_router.get("/variaveis/turnos", response_model=List[VariavelResponse])
 async def get_turnos():
     try:
-        response = supabase.table("turnos").select("*").order("nome").execute()
+        response = supabase.table("turnos").select("*").order("ordem").order("nome").execute()
         return response.data
     except Exception as e:
         logger.error(f"Error fetching turnos: {e}")
@@ -464,10 +469,15 @@ async def get_turnos():
 @api_router.post("/variaveis/turnos", response_model=VariavelResponse)
 async def create_turno(variavel: VariavelCreate):
     try:
+        # Pegar a maior ordem atual
+        max_ordem = supabase.table("turnos").select("ordem").order("ordem", desc=True).limit(1).execute()
+        nova_ordem = (max_ordem.data[0]['ordem'] + 1) if max_ordem.data and max_ordem.data[0].get('ordem') else 0
+        
         doc = {
             "id": str(uuid.uuid4()),
             "nome": variavel.nome,
             "ativo": variavel.ativo,
+            "ordem": nova_ordem,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         supabase.table("turnos").insert(doc).execute()
@@ -479,12 +489,22 @@ async def create_turno(variavel: VariavelCreate):
 @api_router.put("/variaveis/turnos/{turno_id}", response_model=VariavelResponse)
 async def update_turno(turno_id: str, variavel: VariavelCreate):
     try:
-        doc = {"nome": variavel.nome, "ativo": variavel.ativo}
+        doc = {"nome": variavel.nome, "ativo": variavel.ativo, "ordem": variavel.ordem}
         supabase.table("turnos").update(doc).eq("id", turno_id).execute()
         response = supabase.table("turnos").select("*").eq("id", turno_id).execute()
         return response.data[0]
     except Exception as e:
         logger.error(f"Error updating turno: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/variaveis/turnos/reordenar")
+async def reordenar_turnos(request: ReordenarRequest):
+    try:
+        for item in request.itens:
+            supabase.table("turnos").update({"ordem": item['ordem']}).eq("id", item['id']).execute()
+        return {"message": "Ordem atualizada com sucesso"}
+    except Exception as e:
+        logger.error(f"Error reordering turnos: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.delete("/variaveis/turnos/{turno_id}")
@@ -500,7 +520,7 @@ async def delete_turno(turno_id: str):
 @api_router.get("/variaveis/formatos", response_model=List[VariavelResponse])
 async def get_formatos():
     try:
-        response = supabase.table("formatos").select("*").order("nome").execute()
+        response = supabase.table("formatos").select("*").order("ordem").order("nome").execute()
         return response.data
     except Exception as e:
         logger.error(f"Error fetching formatos: {e}")
@@ -509,10 +529,14 @@ async def get_formatos():
 @api_router.post("/variaveis/formatos", response_model=VariavelResponse)
 async def create_formato(variavel: VariavelCreate):
     try:
+        max_ordem = supabase.table("formatos").select("ordem").order("ordem", desc=True).limit(1).execute()
+        nova_ordem = (max_ordem.data[0]['ordem'] + 1) if max_ordem.data and max_ordem.data[0].get('ordem') else 0
+        
         doc = {
             "id": str(uuid.uuid4()),
             "nome": variavel.nome,
             "ativo": variavel.ativo,
+            "ordem": nova_ordem,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         supabase.table("formatos").insert(doc).execute()
@@ -524,12 +548,22 @@ async def create_formato(variavel: VariavelCreate):
 @api_router.put("/variaveis/formatos/{formato_id}", response_model=VariavelResponse)
 async def update_formato(formato_id: str, variavel: VariavelCreate):
     try:
-        doc = {"nome": variavel.nome, "ativo": variavel.ativo}
+        doc = {"nome": variavel.nome, "ativo": variavel.ativo, "ordem": variavel.ordem}
         supabase.table("formatos").update(doc).eq("id", formato_id).execute()
         response = supabase.table("formatos").select("*").eq("id", formato_id).execute()
         return response.data[0]
     except Exception as e:
         logger.error(f"Error updating formato: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/variaveis/formatos/reordenar")
+async def reordenar_formatos(request: ReordenarRequest):
+    try:
+        for item in request.itens:
+            supabase.table("formatos").update({"ordem": item['ordem']}).eq("id", item['id']).execute()
+        return {"message": "Ordem atualizada com sucesso"}
+    except Exception as e:
+        logger.error(f"Error reordering formatos: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.delete("/variaveis/formatos/{formato_id}")
@@ -545,7 +579,7 @@ async def delete_formato(formato_id: str):
 @api_router.get("/variaveis/cores", response_model=List[VariavelResponse])
 async def get_cores():
     try:
-        response = supabase.table("cores").select("*").order("nome").execute()
+        response = supabase.table("cores").select("*").order("ordem").order("nome").execute()
         return response.data
     except Exception as e:
         logger.error(f"Error fetching cores: {e}")
@@ -554,10 +588,14 @@ async def get_cores():
 @api_router.post("/variaveis/cores", response_model=VariavelResponse)
 async def create_cor(variavel: VariavelCreate):
     try:
+        max_ordem = supabase.table("cores").select("ordem").order("ordem", desc=True).limit(1).execute()
+        nova_ordem = (max_ordem.data[0]['ordem'] + 1) if max_ordem.data and max_ordem.data[0].get('ordem') else 0
+        
         doc = {
             "id": str(uuid.uuid4()),
             "nome": variavel.nome,
             "ativo": variavel.ativo,
+            "ordem": nova_ordem,
             "created_at": datetime.now(timezone.utc).isoformat()
         }
         supabase.table("cores").insert(doc).execute()
@@ -569,12 +607,22 @@ async def create_cor(variavel: VariavelCreate):
 @api_router.put("/variaveis/cores/{cor_id}", response_model=VariavelResponse)
 async def update_cor(cor_id: str, variavel: VariavelCreate):
     try:
-        doc = {"nome": variavel.nome, "ativo": variavel.ativo}
+        doc = {"nome": variavel.nome, "ativo": variavel.ativo, "ordem": variavel.ordem}
         supabase.table("cores").update(doc).eq("id", cor_id).execute()
         response = supabase.table("cores").select("*").eq("id", cor_id).execute()
         return response.data[0]
     except Exception as e:
         logger.error(f"Error updating cor: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.put("/variaveis/cores/reordenar")
+async def reordenar_cores(request: ReordenarRequest):
+    try:
+        for item in request.itens:
+            supabase.table("cores").update({"ordem": item['ordem']}).eq("id", item['id']).execute()
+        return {"message": "Ordem atualizada com sucesso"}
+    except Exception as e:
+        logger.error(f"Error reordering cores: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 @api_router.delete("/variaveis/cores/{cor_id}")
