@@ -524,7 +524,7 @@ async def update_turno(turno_id: str, variavel: VariavelCreate):
         logger.error(f"Error updating turno: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.put("/variaveis/turnos/reordenar")
+@api_router.post("/variaveis/turnos/reordenar")
 async def reordenar_turnos(request: ReordenarRequest):
     try:
         for item in request.itens:
@@ -583,7 +583,7 @@ async def update_formato(formato_id: str, variavel: VariavelCreate):
         logger.error(f"Error updating formato: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.put("/variaveis/formatos/reordenar")
+@api_router.post("/variaveis/formatos/reordenar")
 async def reordenar_formatos(request: ReordenarRequest):
     try:
         for item in request.itens:
@@ -642,7 +642,7 @@ async def update_cor(cor_id: str, variavel: VariavelCreate):
         logger.error(f"Error updating cor: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
-@api_router.put("/variaveis/cores/reordenar")
+@api_router.post("/variaveis/cores/reordenar")
 async def reordenar_cores(request: ReordenarRequest):
     try:
         for item in request.itens:

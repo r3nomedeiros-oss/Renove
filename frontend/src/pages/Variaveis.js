@@ -62,7 +62,7 @@ function Variaveis() {
 
     // Salvar no backend
     try {
-      await axios.put(`${API_URL}/variaveis/${tipo}/reordenar`, {
+      await axios.post(`${API_URL}/variaveis/${tipo}/reordenar`, {
         itens: itensComOrdem.map(item => ({ id: item.id, ordem: item.ordem }))
       });
     } catch (error) {
