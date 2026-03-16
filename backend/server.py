@@ -208,7 +208,7 @@ async def get_lancamentos(data_inicio: Optional[str] = None, data_fim: Optional[
         lancamentos = []
         for lanc in response.data:
             # Buscar itens do lançamento
-            itens_response = supabase.table("itens_lancamento").select("*").eq("lancamento_id", lanc['id']).execute()
+            itens_response = supabase.table("itens_producao").select("*").eq("lancamento_id", lanc['id']).execute()
             lanc['itens'] = itens_response.data if itens_response.data else []
             
             # Calcular campos se não existirem
@@ -238,7 +238,7 @@ async def get_lancamento(lancamento_id: str):
         lanc = response.data[0]
         
         # Buscar itens
-        itens_response = supabase.table("itens_lancamento").select("*").eq("lancamento_id", lancamento_id).execute()
+        itens_response = supabase.table("itens_producao").select("*").eq("lancamento_id", lancamento_id).execute()
         lanc['itens'] = itens_response.data if itens_response.data else []
         
         # Calcular campos se não existirem
@@ -292,7 +292,7 @@ async def create_lancamento(lancamento: LancamentoCreate):
                 "pacote_kg": item.pacote_kg,
                 "producao_kg": item.producao_kg
             }
-            supabase.table("itens_lancamento").insert(item_doc).execute()
+            supabase.table("itens_producao").insert(item_doc).execute()
         
         # Retornar o lançamento criado
         doc['itens'] = [{"formato": i.formato, "cor": i.cor, "pacote_kg": i.pacote_kg, "producao_kg": i.producao_kg} for i in lancamento.itens]
@@ -328,7 +328,7 @@ async def update_lancamento(lancamento_id: str, lancamento: LancamentoCreate):
         supabase.table("lancamentos").update(doc).eq("id", lancamento_id).execute()
         
         # Deletar itens antigos e inserir novos
-        supabase.table("itens_lancamento").delete().eq("lancamento_id", lancamento_id).execute()
+        supabase.table("itens_producao").delete().eq("lancamento_id", lancamento_id).execute()
         
         for item in lancamento.itens:
             item_doc = {
@@ -339,7 +339,7 @@ async def update_lancamento(lancamento_id: str, lancamento: LancamentoCreate):
                 "pacote_kg": item.pacote_kg,
                 "producao_kg": item.producao_kg
             }
-            supabase.table("itens_lancamento").insert(item_doc).execute()
+            supabase.table("itens_producao").insert(item_doc).execute()
         
         doc['id'] = lancamento_id
         doc['itens'] = [{"formato": i.formato, "cor": i.cor, "pacote_kg": i.pacote_kg, "producao_kg": i.producao_kg} for i in lancamento.itens]
@@ -354,7 +354,7 @@ async def update_lancamento(lancamento_id: str, lancamento: LancamentoCreate):
 async def delete_lancamento(lancamento_id: str):
     try:
         # Deletar itens primeiro
-        supabase.table("itens_lancamento").delete().eq("lancamento_id", lancamento_id).execute()
+        supabase.table("itens_producao").delete().eq("lancamento_id", lancamento_id).execute()
         # Deletar lançamento
         supabase.table("lancamentos").delete().eq("id", lancamento_id).execute()
         return {"message": "Lançamento excluído com sucesso"}
@@ -393,7 +393,7 @@ async def get_relatorios(periodo: str = "mensal", data_inicio: Optional[str] = N
         # Calcular campos faltantes e buscar itens
         itens_por_formato_cor = {}
         for lanc in lancamentos:
-            itens_response = supabase.table("itens_lancamento").select("*").eq("lancamento_id", lanc['id']).execute()
+            itens_response = supabase.table("itens_producao").select("*").eq("lancamento_id", lanc['id']).execute()
             itens = itens_response.data if itens_response.data else []
             
             # Calcular producao_total e perdas_total se não existirem

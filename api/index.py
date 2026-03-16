@@ -133,7 +133,7 @@ def criar_lancamento():
                 "pacote_kg": float(item.get('pacote_kg', 0) or 0),
                 "producao_kg": float(item.get('producao_kg', 0) or 0)
             }
-            supabase.table("itens_lancamento").insert(item_obj).execute()
+            supabase.table("itens_producao").insert(item_obj).execute()
         
         return jsonify({"success": True, "id": lancamento_id}), 201
     
@@ -163,7 +163,7 @@ def listar_lancamentos():
 
         # Buscar todos os itens dos lançamentos listados
         lanc_ids = [l['id'] for l in lancamentos]
-        itens_response = supabase.table("itens_lancamento").select("*").in_("lancamento_id", lanc_ids).execute()
+        itens_response = supabase.table("itens_producao").select("*").in_("lancamento_id", lanc_ids).execute()
         
         # Agrupar itens por lancamento_id
         itens_por_lanc = {}
@@ -213,7 +213,7 @@ def obter_lancamento(lancamento_id):
             return jsonify({"error": "Lançamento não encontrado"}), 404
         
         lancamento = response.data[0]
-        itens_response = supabase.table("itens_lancamento").select("*").eq("lancamento_id", lancamento_id).execute()
+        itens_response = supabase.table("itens_producao").select("*").eq("lancamento_id", lancamento_id).execute()
         lancamento['itens'] = itens_response.data or []
         
         # Calcular campos se não existirem
@@ -254,7 +254,7 @@ def atualizar_lancamento(lancamento_id):
         supabase.table("lancamentos").update(lancamento_update).eq("id", lancamento_id).execute()
         
         # Deletar itens antigos e inserir novos
-        supabase.table("itens_lancamento").delete().eq("lancamento_id", lancamento_id).execute()
+        supabase.table("itens_producao").delete().eq("lancamento_id", lancamento_id).execute()
         
         for item in itens:
             item_obj = {
@@ -265,7 +265,7 @@ def atualizar_lancamento(lancamento_id):
                 "pacote_kg": float(item.get('pacote_kg', 0) or 0),
                 "producao_kg": float(item.get('producao_kg', 0) or 0)
             }
-            supabase.table("itens_lancamento").insert(item_obj).execute()
+            supabase.table("itens_producao").insert(item_obj).execute()
         
         return jsonify({"success": True})
     
@@ -277,7 +277,7 @@ def atualizar_lancamento(lancamento_id):
 def deletar_lancamento(lancamento_id):
     try:
         # Deletar itens primeiro
-        supabase.table("itens_lancamento").delete().eq("lancamento_id", lancamento_id).execute()
+        supabase.table("itens_producao").delete().eq("lancamento_id", lancamento_id).execute()
         # Deletar lançamento
         supabase.table("lancamentos").delete().eq("id", lancamento_id).execute()
         return jsonify({"success": True, "message": "Lançamento excluído com sucesso"})
@@ -337,7 +337,7 @@ def gerar_relatorio():
         itens_por_formato_cor = {}
         
         for lanc in lancamentos:
-            itens_response = supabase.table("itens_lancamento").select("*").eq("lancamento_id", lanc['id']).execute()
+            itens_response = supabase.table("itens_producao").select("*").eq("lancamento_id", lanc['id']).execute()
             itens = itens_response.data if itens_response.data else []
             
             # Calcular producao_total e perdas_total se não existirem
