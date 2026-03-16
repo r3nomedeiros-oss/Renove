@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Plus, Trash2, Save } from 'lucide-react';
+import { Plus, Trash2, Save, Eye } from 'lucide-react';
 
 const API_URL = (process.env.REACT_APP_BACKEND_URL || '') + '/api';
 
@@ -109,6 +109,34 @@ function NovoLancamento() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Cálculos para pré-visualização
+  const previewData = useMemo(() => {
+    const producaoTotal = lancamento.itens.reduce((acc, item) => 
+      acc + (parseFloat(item.producao_kg) || 0), 0);
+    const pacoteTotal = lancamento.itens.reduce((acc, item) => 
+      acc + (parseFloat(item.pacote_kg) || 0), 0);
+    const orelha = parseFloat(lancamento.orelha_kg) || 0;
+    const aparas = parseFloat(lancamento.aparas_kg) || 0;
+    const perdasTotal = orelha + aparas;
+    const totalGeral = producaoTotal + perdasTotal;
+    const percentualPerdas = totalGeral > 0 ? ((perdasTotal / totalGeral) * 100).toFixed(2) : 0;
+    
+    return {
+      producaoTotal: producaoTotal.toFixed(2),
+      pacoteTotal: pacoteTotal.toFixed(2),
+      perdasTotal: perdasTotal.toFixed(2),
+      percentualPerdas,
+      itensPreenchidos: lancamento.itens.filter(i => i.formato && i.cor && i.producao_kg).length,
+      totalItens: lancamento.itens.length
+    };
+  }, [lancamento]);
+
+  const formatarData = (dataStr) => {
+    if (!dataStr) return '';
+    const [ano, mes, dia] = dataStr.split('-');
+    return `${dia}/${mes}/${ano}`;
   };
 
   if (loadingVars) {
@@ -297,6 +325,95 @@ function NovoLancamento() {
               )}
             </div>
           ))}
+        </div>
+
+        {/* Pré-visualização */}
+        <div className="card" style={{background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)', border: '2px solid #0ea5e9'}}>
+          <div style={{display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px'}}>
+            <Eye size={24} style={{color: '#0369a1'}} />
+            <h2 style={{margin: 0, color: '#0369a1'}}>Pré-visualização do Lançamento</h2>
+          </div>
+          
+          {/* Informações Gerais */}
+          <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', marginBottom: '20px'}}>
+            <div style={{background: 'white', padding: '15px', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)'}}>
+              <div style={{fontSize: '12px', color: '#64748b', marginBottom: '5px'}}>Data</div>
+              <div style={{fontSize: '18px', fontWeight: '600', color: '#1e293b'}}>{formatarData(lancamento.data)}</div>
+            </div>
+            <div style={{background: 'white', padding: '15px', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)'}}>
+              <div style={{fontSize: '12px', color: '#64748b', marginBottom: '5px'}}>Turno</div>
+              <div style={{fontSize: '18px', fontWeight: '600', color: '#1e293b'}}>{lancamento.turno || '-'}</div>
+            </div>
+            <div style={{background: 'white', padding: '15px', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)'}}>
+              <div style={{fontSize: '12px', color: '#64748b', marginBottom: '5px'}}>Hora</div>
+              <div style={{fontSize: '18px', fontWeight: '600', color: '#1e293b'}}>{lancamento.hora || '-'}</div>
+            </div>
+            <div style={{background: 'white', padding: '15px', borderRadius: '8px', textAlign: 'center', boxShadow: '0 2px 4px rgba(0,0,0,0.05)'}}>
+              <div style={{fontSize: '12px', color: '#64748b', marginBottom: '5px'}}>Itens</div>
+              <div style={{fontSize: '18px', fontWeight: '600', color: '#1e293b'}}>{previewData.itensPreenchidos}/{previewData.totalItens}</div>
+            </div>
+          </div>
+
+          {/* Totais */}
+          <div style={{display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '15px', marginBottom: '20px'}}>
+            <div style={{background: '#22c55e', padding: '15px', borderRadius: '8px', textAlign: 'center'}}>
+              <div style={{fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '5px'}}>Produção Total</div>
+              <div style={{fontSize: '22px', fontWeight: '700', color: 'white'}}>{previewData.producaoTotal} kg</div>
+            </div>
+            <div style={{background: '#3b82f6', padding: '15px', borderRadius: '8px', textAlign: 'center'}}>
+              <div style={{fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '5px'}}>Pacote Total</div>
+              <div style={{fontSize: '22px', fontWeight: '700', color: 'white'}}>{previewData.pacoteTotal} kg</div>
+            </div>
+            <div style={{background: '#ef4444', padding: '15px', borderRadius: '8px', textAlign: 'center'}}>
+              <div style={{fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '5px'}}>Perdas Total</div>
+              <div style={{fontSize: '22px', fontWeight: '700', color: 'white'}}>{previewData.perdasTotal} kg</div>
+            </div>
+            <div style={{background: '#f97316', padding: '15px', borderRadius: '8px', textAlign: 'center'}}>
+              <div style={{fontSize: '12px', color: 'rgba(255,255,255,0.8)', marginBottom: '5px'}}>% Perdas</div>
+              <div style={{fontSize: '22px', fontWeight: '700', color: 'white'}}>{previewData.percentualPerdas}%</div>
+            </div>
+          </div>
+
+          {/* Detalhamento Perdas */}
+          <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px', marginBottom: '20px'}}>
+            <div style={{background: 'white', padding: '12px 15px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #fecaca'}}>
+              <span style={{color: '#64748b'}}>Orelha</span>
+              <span style={{fontWeight: '600', color: '#dc2626'}}>{parseFloat(lancamento.orelha_kg || 0).toFixed(2)} kg</span>
+            </div>
+            <div style={{background: 'white', padding: '12px 15px', borderRadius: '8px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', border: '1px solid #fecaca'}}>
+              <span style={{color: '#64748b'}}>Aparas</span>
+              <span style={{fontWeight: '600', color: '#dc2626'}}>{parseFloat(lancamento.aparas_kg || 0).toFixed(2)} kg</span>
+            </div>
+          </div>
+
+          {/* Lista de Itens */}
+          {lancamento.itens.some(i => i.formato || i.cor) && (
+            <div>
+              <div style={{fontSize: '14px', fontWeight: '600', color: '#475569', marginBottom: '10px'}}>Itens de Produção:</div>
+              <div style={{background: 'white', borderRadius: '8px', overflow: 'hidden', border: '1px solid #e2e8f0'}}>
+                <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                  <thead>
+                    <tr style={{background: '#f8fafc'}}>
+                      <th style={{padding: '10px 15px', textAlign: 'left', fontSize: '12px', color: '#64748b', borderBottom: '1px solid #e2e8f0'}}>Formato</th>
+                      <th style={{padding: '10px 15px', textAlign: 'left', fontSize: '12px', color: '#64748b', borderBottom: '1px solid #e2e8f0'}}>Cor</th>
+                      <th style={{padding: '10px 15px', textAlign: 'right', fontSize: '12px', color: '#64748b', borderBottom: '1px solid #e2e8f0'}}>Pacote (kg)</th>
+                      <th style={{padding: '10px 15px', textAlign: 'right', fontSize: '12px', color: '#64748b', borderBottom: '1px solid #e2e8f0'}}>Produção (kg)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {lancamento.itens.filter(i => i.formato || i.cor || i.pacote_kg || i.producao_kg).map((item, idx) => (
+                      <tr key={idx} style={{borderBottom: idx < lancamento.itens.length - 1 ? '1px solid #f1f5f9' : 'none'}}>
+                        <td style={{padding: '10px 15px', fontSize: '14px', color: '#1e293b'}}>{item.formato || '-'}</td>
+                        <td style={{padding: '10px 15px', fontSize: '14px', color: '#1e293b'}}>{item.cor || '-'}</td>
+                        <td style={{padding: '10px 15px', fontSize: '14px', color: '#1e293b', textAlign: 'right'}}>{parseFloat(item.pacote_kg || 0).toFixed(2)}</td>
+                        <td style={{padding: '10px 15px', fontSize: '14px', color: '#1e293b', textAlign: 'right', fontWeight: '600'}}>{parseFloat(item.producao_kg || 0).toFixed(2)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
 
         <div style={{display: 'flex', gap: '10px'}}>

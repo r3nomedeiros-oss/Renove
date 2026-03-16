@@ -187,6 +187,13 @@ function Variaveis() {
     return <div className="loading">Carregando...</div>;
   }
 
+  // Mapear tipo para endpoint correto
+  const tipoParaEndpoint = {
+    'turno': 'turnos',
+    'formato': 'formatos', 
+    'cor': 'cores'
+  };
+
   const renderList = (items, setItems, tipo, novoValor, setNovoValor, adicionar, deletar, atualizar) => (
     <div>
       {/* Formulário de adicionar */}
@@ -233,7 +240,7 @@ function Variaveis() {
               {/* Botões de ordenação */}
               <div style={{display: 'flex', flexDirection: 'column', gap: '2px', marginRight: '12px'}}>
                 <button
-                  onClick={() => moverItem(items, setItems, tipo + 's', index, -1)}
+                  onClick={() => moverItem(items, setItems, tipoParaEndpoint[tipo], index, -1)}
                   disabled={index === 0}
                   style={{
                     background: index === 0 ? '#e2e8f0' : '#667eea',
@@ -251,7 +258,7 @@ function Variaveis() {
                   <ChevronUp size={14} />
                 </button>
                 <button
-                  onClick={() => moverItem(items, setItems, tipo + 's', index, 1)}
+                  onClick={() => moverItem(items, setItems, tipoParaEndpoint[tipo], index, 1)}
                   disabled={index === items.length - 1}
                   style={{
                     background: index === items.length - 1 ? '#e2e8f0' : '#667eea',
