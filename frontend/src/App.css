@@ -643,11 +643,21 @@ table tbody tr:hover {
     font-size: 16px !important;
   }
   
-  .preview-table-container {
-    overflow-x: auto;
+  /* Esconder tabela no mobile, mostrar cards */
+  .preview-table-desktop {
+    display: none;
   }
   
-  .preview-table-container table {
-    min-width: 300px;
+  .preview-items-mobile {
+    display: block;
   }
+}
+
+/* Desktop - mostrar tabela, esconder cards */
+.preview-table-desktop {
+  display: block;
+}
+
+.preview-items-mobile {
+  display: none;
 }

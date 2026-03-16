@@ -372,7 +372,9 @@ function NovoLancamento() {
               {/* Itens de Produção - Card Branco */}
               <div style={{background: 'white', borderRadius: '8px', padding: '20px', marginBottom: '20px'}}>
                 <div style={{fontSize: '14px', color: '#6b7280', marginBottom: '15px'}}>Itens de Produção</div>
-                <div className="preview-table-container">
+                
+                {/* Tabela para Desktop */}
+                <div className="preview-table-desktop">
                   <table style={{width: '100%', borderCollapse: 'collapse'}}>
                     <thead>
                       <tr style={{borderBottom: '1px solid #e5e7eb'}}>
@@ -393,6 +395,34 @@ function NovoLancamento() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+
+                {/* Cards para Mobile */}
+                <div className="preview-items-mobile">
+                  {lancamento.itens.map((item, idx) => (
+                    <div key={idx} style={{
+                      background: '#f9fafb',
+                      borderRadius: '8px',
+                      padding: '12px',
+                      marginBottom: idx < lancamento.itens.length - 1 ? '10px' : '0',
+                      border: '1px solid #e5e7eb'
+                    }}>
+                      <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px'}}>
+                        <span style={{fontWeight: '600', color: '#111827', fontSize: '15px'}}>{item.formato || '-'}</span>
+                        <span style={{background: '#e0e7ff', color: '#4338ca', padding: '2px 8px', borderRadius: '4px', fontSize: '13px', fontWeight: '500'}}>{item.cor || '-'}</span>
+                      </div>
+                      <div style={{display: 'flex', justifyContent: 'space-between', fontSize: '14px'}}>
+                        <div>
+                          <span style={{color: '#6b7280'}}>Pacote: </span>
+                          <span style={{color: '#111827', fontWeight: '500'}}>{parseFloat(item.pacote_kg || 0).toFixed(0)} kg</span>
+                        </div>
+                        <div>
+                          <span style={{color: '#6b7280'}}>Produção: </span>
+                          <span style={{color: '#16a34a', fontWeight: '700'}}>{parseFloat(item.producao_kg || 0).toFixed(0)} kg</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
 
