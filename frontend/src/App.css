@@ -526,3 +526,128 @@ table tbody tr:hover {
     grid-template-columns: 1fr;
   }
 }
+
+/* Itens de Produção - Responsivo */
+.item-producao-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr 1fr 36px;
+  gap: 10px;
+  align-items: end;
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  border: 1px solid #e2e8f0;
+}
+
+.item-producao-grid .form-group {
+  margin-bottom: 0;
+}
+
+.item-producao-grid .form-group label {
+  font-size: 12px;
+  margin-bottom: 4px;
+  font-weight: 600;
+}
+
+/* Pré-visualização Responsiva */
+.preview-info-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+}
+
+.preview-totais-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+}
+
+/* Tablet - 768px */
+@media (max-width: 768px) {
+  .item-producao-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  
+  .item-producao-grid .btn-delete-item {
+    grid-column: span 2;
+    justify-self: end;
+  }
+
+  .preview-info-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+  }
+
+  .preview-totais-grid {
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+  }
+}
+
+/* Mobile - 480px */
+@media (max-width: 480px) {
+  .item-producao-grid {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 15px;
+  }
+  
+  .item-producao-grid .form-group label {
+    font-size: 14px;
+    font-weight: 700;
+    color: #1a202c;
+  }
+  
+  .item-producao-grid .form-control {
+    font-size: 16px;
+    padding: 12px;
+    background: #f1f5f9;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .item-producao-grid .btn-delete-item {
+    width: 100%;
+    justify-content: center;
+    padding: 12px;
+    height: auto;
+  }
+
+  .preview-info-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+  
+  .preview-info-grid > div:nth-child(3) {
+    grid-column: span 2;
+    text-align: center;
+  }
+
+  .preview-totais-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  
+  .preview-totais-grid > div:nth-child(5) {
+    grid-column: span 2;
+  }
+  
+  .preview-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 10px;
+  }
+  
+  .preview-header span {
+    font-size: 16px !important;
+  }
+  
+  .preview-table-container {
+    overflow-x: auto;
+  }
+  
+  .preview-table-container table {
+    min-width: 300px;
+  }
+}

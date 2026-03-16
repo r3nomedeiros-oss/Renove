@@ -228,18 +228,17 @@ function NovoLancamento() {
           </div>
 
           {lancamento.itens.map((item, index) => (
-            <div key={index} style={{display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr 36px', gap: '10px', alignItems: 'end', background: '#f8fafc', padding: '12px', borderRadius: '8px', marginBottom: '10px', border: '1px solid #e2e8f0'}}>
-              <div className="form-group" style={{marginBottom: '0'}}>
-                <label style={{fontSize: '12px', marginBottom: '4px'}}>Formato</label>
+            <div key={index} className="item-producao-grid">
+              <div className="form-group">
+                <label>Formato</label>
                 {formatos.length > 0 ? (
                   <select
                     className="form-control"
                     value={item.formato}
                     onChange={(e) => atualizarItem(index, 'formato', e.target.value)}
                     required
-                    style={{fontSize: '12px', padding: '8px'}}
                   >
-                    <option value="">Selecione...</option>
+                    <option value="">Selecione</option>
                     {formatos.map(formato => (
                       <option key={formato.id} value={formato.nome}>{formato.nome}</option>
                     ))}
@@ -252,22 +251,20 @@ function NovoLancamento() {
                     onChange={(e) => atualizarItem(index, 'formato', e.target.value)}
                     required
                     placeholder="Ex: 30x40"
-                    style={{fontSize: '12px', padding: '8px'}}
                   />
                 )}
               </div>
 
-              <div className="form-group" style={{marginBottom: '0'}}>
-                <label style={{fontSize: '12px', marginBottom: '4px'}}>Cor</label>
+              <div className="form-group">
+                <label>Cor</label>
                 {cores.length > 0 ? (
                   <select
                     className="form-control"
                     value={item.cor}
                     onChange={(e) => atualizarItem(index, 'cor', e.target.value)}
                     required
-                    style={{fontSize: '12px', padding: '8px'}}
                   >
-                    <option value="">Selecione...</option>
+                    <option value="">Selecione</option>
                     {cores.map(cor => (
                       <option key={cor.id} value={cor.nome}>{cor.nome}</option>
                     ))}
@@ -280,13 +277,12 @@ function NovoLancamento() {
                     onChange={(e) => atualizarItem(index, 'cor', e.target.value)}
                     required
                     placeholder="Ex: Azul"
-                    style={{fontSize: '12px', padding: '8px'}}
                   />
                 )}
               </div>
 
-              <div className="form-group" style={{marginBottom: '0'}}>
-                <label style={{fontSize: '12px', marginBottom: '4px'}}>Pacote (kg)</label>
+              <div className="form-group">
+                <label>Pacote (kg)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -295,12 +291,11 @@ function NovoLancamento() {
                   onChange={(e) => atualizarItem(index, 'pacote_kg', e.target.value)}
                   required
                   placeholder="0,00"
-                  style={{fontSize: '12px', padding: '8px'}}
                 />
               </div>
 
-              <div className="form-group" style={{marginBottom: '0'}}>
-                <label style={{fontSize: '12px', marginBottom: '4px'}}>Produção (kg)</label>
+              <div className="form-group">
+                <label>Produção (kg)</label>
                 <input
                   type="number"
                   step="0.01"
@@ -309,16 +304,14 @@ function NovoLancamento() {
                   onChange={(e) => atualizarItem(index, 'producao_kg', e.target.value)}
                   required
                   placeholder="0,00"
-                  style={{fontSize: '12px', padding: '8px'}}
                 />
               </div>
 
               {lancamento.itens.length > 1 && (
                 <button
                   type="button"
-                  className="btn btn-danger"
+                  className="btn btn-danger btn-delete-item"
                   onClick={() => removerItem(index)}
-                  style={{padding: '8px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center', minWidth: '36px'}}
                   title="Remover item"
                 >
                   <Trash2 size={14} />
@@ -331,7 +324,7 @@ function NovoLancamento() {
         {/* Pré-visualização */}
         <div style={{background: '#dcfce7', borderRadius: '12px', padding: '20px', border: '1px solid #86efac'}}>
           {/* Header */}
-          <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
+          <div className="preview-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
             <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
               <Eye size={22} style={{color: '#16a34a'}} />
               <span style={{fontSize: '20px', fontWeight: '600', color: '#16a34a'}}>Pré-visualização do Lançamento</span>
@@ -360,7 +353,7 @@ function NovoLancamento() {
             <>
               {/* Informações Gerais - Card Branco */}
               <div style={{background: 'white', borderRadius: '8px', padding: '20px', marginBottom: '20px'}}>
-                <div style={{display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '30px'}}>
+                <div className="preview-info-grid">
                   <div>
                     <div style={{fontSize: '13px', color: '#6b7280', marginBottom: '4px'}}>Data</div>
                     <div style={{fontSize: '18px', fontWeight: '600', color: '#111827'}}>{formatarData(lancamento.data)}</div>
@@ -379,30 +372,32 @@ function NovoLancamento() {
               {/* Itens de Produção - Card Branco */}
               <div style={{background: 'white', borderRadius: '8px', padding: '20px', marginBottom: '20px'}}>
                 <div style={{fontSize: '14px', color: '#6b7280', marginBottom: '15px'}}>Itens de Produção</div>
-                <table style={{width: '100%', borderCollapse: 'collapse'}}>
-                  <thead>
-                    <tr style={{borderBottom: '1px solid #e5e7eb'}}>
-                      <th style={{padding: '12px 0', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#374151', textTransform: 'uppercase'}}>Formato</th>
-                      <th style={{padding: '12px 0', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#374151', textTransform: 'uppercase'}}>Cor</th>
-                      <th style={{padding: '12px 0', textAlign: 'center', fontSize: '12px', fontWeight: '600', color: '#374151', textTransform: 'uppercase'}}>Pacote (kg)</th>
-                      <th style={{padding: '12px 0', textAlign: 'right', fontSize: '12px', fontWeight: '600', color: '#374151', textTransform: 'uppercase'}}>Produção (kg)</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {lancamento.itens.map((item, idx) => (
-                      <tr key={idx} style={{borderBottom: idx < lancamento.itens.length - 1 ? '1px solid #f3f4f6' : 'none'}}>
-                        <td style={{padding: '12px 0', fontSize: '14px', color: '#111827'}}>{item.formato || '-'}</td>
-                        <td style={{padding: '12px 0', fontSize: '14px', color: '#111827'}}>{item.cor || '-'}</td>
-                        <td style={{padding: '12px 0', fontSize: '14px', color: '#111827', textAlign: 'center'}}>{parseFloat(item.pacote_kg || 0).toFixed(0)}</td>
-                        <td style={{padding: '12px 0', fontSize: '14px', color: '#16a34a', textAlign: 'right', fontWeight: '500'}}>{parseFloat(item.producao_kg || 0).toFixed(0)}</td>
+                <div className="preview-table-container">
+                  <table style={{width: '100%', borderCollapse: 'collapse'}}>
+                    <thead>
+                      <tr style={{borderBottom: '1px solid #e5e7eb'}}>
+                        <th style={{padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#374151', textTransform: 'uppercase'}}>Formato</th>
+                        <th style={{padding: '12px 8px', textAlign: 'left', fontSize: '12px', fontWeight: '600', color: '#374151', textTransform: 'uppercase'}}>Cor</th>
+                        <th style={{padding: '12px 8px', textAlign: 'center', fontSize: '12px', fontWeight: '600', color: '#374151', textTransform: 'uppercase'}}>Pacote (kg)</th>
+                        <th style={{padding: '12px 8px', textAlign: 'right', fontSize: '12px', fontWeight: '600', color: '#374151', textTransform: 'uppercase'}}>Produção (kg)</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {lancamento.itens.map((item, idx) => (
+                        <tr key={idx} style={{borderBottom: idx < lancamento.itens.length - 1 ? '1px solid #f3f4f6' : 'none'}}>
+                          <td style={{padding: '12px 8px', fontSize: '14px', color: '#111827'}}>{item.formato || '-'}</td>
+                          <td style={{padding: '12px 8px', fontSize: '14px', color: '#111827'}}>{item.cor || '-'}</td>
+                          <td style={{padding: '12px 8px', fontSize: '14px', color: '#111827', textAlign: 'center'}}>{parseFloat(item.pacote_kg || 0).toFixed(0)}</td>
+                          <td style={{padding: '12px 8px', fontSize: '14px', color: '#16a34a', textAlign: 'right', fontWeight: '500'}}>{parseFloat(item.producao_kg || 0).toFixed(0)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               {/* Cards de Totais */}
-              <div style={{display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px'}}>
+              <div className="preview-totais-grid">
                 {/* Produção Total - Rosa Claro */}
                 <div style={{background: '#fce7f3', borderRadius: '8px', padding: '15px', textAlign: 'center'}}>
                   <div style={{fontSize: '12px', color: '#be185d', marginBottom: '6px'}}>Produção Total</div>
