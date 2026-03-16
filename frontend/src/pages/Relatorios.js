@@ -298,7 +298,7 @@ function Relatorios() {
             >
               <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
                 {itensExpandido ? <ChevronUp size={20} style={{color: '#16a34a'}} /> : <ChevronDown size={20} style={{color: '#16a34a'}} />}
-                <h2 style={{margin: 0, color: '#16a34a', fontStyle: 'italic'}}>
+                <h2 style={{margin: 0, color: '#111827', fontStyle: 'italic'}}>
                   Produção por Itens (Formato e Cor)
                 </h2>
                 {relatorio.itens_por_formato_cor && (
