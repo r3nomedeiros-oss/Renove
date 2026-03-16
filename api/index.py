@@ -177,19 +177,15 @@ def listar_lancamentos():
         for lanc in lancamentos:
             itens = itens_por_lanc.get(lanc['id'], [])
             
-            # Calcular campos se não existirem
-            producao_total = lanc.get('producao_total')
-            if producao_total is None:
-                producao_total = sum(float(item.get('producao_kg', 0) or 0) for item in itens)
+            # Sempre calcular producao_total a partir dos itens (mais confiável)
+            producao_total = sum(float(item.get('producao_kg', 0) or 0) for item in itens)
             
-            perdas_total = lanc.get('perdas_total')
-            if perdas_total is None:
-                perdas_total = float(lanc.get('orelha_kg', 0) or 0) + float(lanc.get('aparas_kg', 0) or 0)
+            # Calcular perdas
+            perdas_total = float(lanc.get('orelha_kg', 0) or 0) + float(lanc.get('aparas_kg', 0) or 0)
             
+            # Calcular percentual
             total = producao_total + perdas_total
-            percentual_perdas = lanc.get('percentual_perdas')
-            if percentual_perdas is None:
-                percentual_perdas = round((perdas_total / total * 100), 2) if total > 0 else 0
+            percentual_perdas = round((perdas_total / total * 100), 2) if total > 0 else 0
             
             result.append({
                 **lanc,
@@ -216,11 +212,11 @@ def obter_lancamento(lancamento_id):
         itens_response = supabase.table("itens_producao").select("*").eq("lancamento_id", lancamento_id).execute()
         lancamento['itens'] = itens_response.data or []
         
-        # Calcular campos se não existirem
-        if lancamento.get('producao_total') is None:
-            lancamento['producao_total'] = sum(float(item.get('producao_kg', 0) or 0) for item in lancamento['itens'])
-        if lancamento.get('perdas_total') is None:
-            lancamento['perdas_total'] = float(lancamento.get('orelha_kg', 0) or 0) + float(lancamento.get('aparas_kg', 0) or 0)
+        # Sempre calcular producao_total a partir dos itens (mais confiável)
+        lancamento['producao_total'] = sum(float(item.get('producao_kg', 0) or 0) for item in lancamento['itens'])
+        lancamento['perdas_total'] = float(lancamento.get('orelha_kg', 0) or 0) + float(lancamento.get('aparas_kg', 0) or 0)
+        total = lancamento['producao_total'] + lancamento['perdas_total']
+        lancamento['percentual_perdas'] = round((lancamento['perdas_total'] / total * 100), 2) if total > 0 else 0
         
         return jsonify(lancamento)
     

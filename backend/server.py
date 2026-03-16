@@ -211,14 +211,11 @@ async def get_lancamentos(data_inicio: Optional[str] = None, data_fim: Optional[
             itens_response = supabase.table("itens_producao").select("*").eq("lancamento_id", lanc['id']).execute()
             lanc['itens'] = itens_response.data if itens_response.data else []
             
-            # Calcular campos se não existirem
-            if lanc.get('producao_total') is None:
-                lanc['producao_total'] = sum(item.get('producao_kg', 0) for item in lanc['itens'])
-            if lanc.get('perdas_total') is None:
-                lanc['perdas_total'] = (lanc.get('orelha_kg', 0) or 0) + (lanc.get('aparas_kg', 0) or 0)
-            if lanc.get('percentual_perdas') is None:
-                total = lanc['producao_total'] + lanc['perdas_total']
-                lanc['percentual_perdas'] = round((lanc['perdas_total'] / total * 100), 2) if total > 0 else 0
+            # Sempre calcular producao_total a partir dos itens (mais confiável)
+            lanc['producao_total'] = sum(item.get('producao_kg', 0) or 0 for item in lanc['itens'])
+            lanc['perdas_total'] = (lanc.get('orelha_kg', 0) or 0) + (lanc.get('aparas_kg', 0) or 0)
+            total = lanc['producao_total'] + lanc['perdas_total']
+            lanc['percentual_perdas'] = round((lanc['perdas_total'] / total * 100), 2) if total > 0 else 0
             
             lancamentos.append(lanc)
         
@@ -241,14 +238,11 @@ async def get_lancamento(lancamento_id: str):
         itens_response = supabase.table("itens_producao").select("*").eq("lancamento_id", lancamento_id).execute()
         lanc['itens'] = itens_response.data if itens_response.data else []
         
-        # Calcular campos se não existirem
-        if lanc.get('producao_total') is None:
-            lanc['producao_total'] = sum(item.get('producao_kg', 0) for item in lanc['itens'])
-        if lanc.get('perdas_total') is None:
-            lanc['perdas_total'] = (lanc.get('orelha_kg', 0) or 0) + (lanc.get('aparas_kg', 0) or 0)
-        if lanc.get('percentual_perdas') is None:
-            total = lanc['producao_total'] + lanc['perdas_total']
-            lanc['percentual_perdas'] = round((lanc['perdas_total'] / total * 100), 2) if total > 0 else 0
+        # Sempre calcular producao_total a partir dos itens (mais confiável)
+        lanc['producao_total'] = sum(item.get('producao_kg', 0) or 0 for item in lanc['itens'])
+        lanc['perdas_total'] = (lanc.get('orelha_kg', 0) or 0) + (lanc.get('aparas_kg', 0) or 0)
+        total = lanc['producao_total'] + lanc['perdas_total']
+        lanc['percentual_perdas'] = round((lanc['perdas_total'] / total * 100), 2) if total > 0 else 0
         
         return lanc
     except HTTPException:
