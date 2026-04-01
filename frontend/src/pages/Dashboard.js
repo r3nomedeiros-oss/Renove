@@ -13,6 +13,7 @@ function Dashboard() {
   const [localLoading, setLocalLoading] = useState(true);
   const [localStats, setLocalStats] = useState(null);
   const [localLancamentos, setLocalLancamentos] = useState([]);
+  const [mesReferencia, setMesReferencia] = useState(null);
 
   useEffect(() => {
     carregarDashboard();
@@ -22,26 +23,51 @@ function Dashboard() {
   const carregarDashboard = async () => {
     setLocalLoading(true);
     try {
-      const [statsData, lancamentosData] = await Promise.all([
-        carregarStats(false, 'mensal'),
-        carregarLancamentos()
-      ]);
+      // Primeiro carrega todos os lançamentos para encontrar a data mais recente
+      const lancamentosData = await carregarLancamentos();
+      
+      // Se não houver lançamentos no mês atual, busca dados do último mês com dados
+      let statsData;
+      if (lancamentosData && lancamentosData.length > 0) {
+        // Encontra a data do lançamento mais recente
+        const datasOrdenadas = lancamentosData.map(l => l.data).sort().reverse();
+        const ultimaData = datasOrdenadas[0];
+        
+        // Extrai mês e ano do último lançamento
+        const [ano, mes] = ultimaData.split('-');
+        const inicioMes = `${ano}-${mes}-01`;
+        const fimMes = new Date(parseInt(ano), parseInt(mes), 0).toISOString().split('T')[0];
+        
+        // Guarda a referência do mês para exibição
+        setMesReferencia(new Date(parseInt(ano), parseInt(mes) - 1, 1));
+        
+        // Busca stats do mês do último lançamento
+        statsData = await carregarStats(false, 'customizado', inicioMes, fimMes);
+      } else {
+        setMesReferencia(new Date());
+        statsData = await carregarStats(false, 'mensal');
+      }
       
       setLocalStats(statsData);
       
-      // Últimos 7 dias (incluindo hoje)
-      const hoje = new Date();
-      hoje.setHours(23, 59, 59, 999);
-      const seteDiasAtras = new Date();
-      seteDiasAtras.setDate(hoje.getDate() - 6);
-      seteDiasAtras.setHours(0, 0, 0, 0);
-      
-      const ultimos7Dias = (lancamentosData || []).filter(lanc => {
-        const dataLanc = new Date(lanc.data + 'T12:00:00');
-        return dataLanc >= seteDiasAtras && dataLanc <= hoje;
-      });
-      
-      setLocalLancamentos(ultimos7Dias);
+      // Últimos 7 dias baseado no último lançamento (não na data atual)
+      if (lancamentosData && lancamentosData.length > 0) {
+        const datasOrdenadas = lancamentosData.map(l => l.data).sort().reverse();
+        const ultimaData = new Date(datasOrdenadas[0] + 'T23:59:59');
+        
+        const seteDiasAtras = new Date(ultimaData);
+        seteDiasAtras.setDate(ultimaData.getDate() - 6);
+        seteDiasAtras.setHours(0, 0, 0, 0);
+        
+        const ultimos7Dias = lancamentosData.filter(lanc => {
+          const dataLanc = new Date(lanc.data + 'T12:00:00');
+          return dataLanc >= seteDiasAtras && dataLanc <= ultimaData;
+        });
+        
+        setLocalLancamentos(ultimos7Dias);
+      } else {
+        setLocalLancamentos([]);
+      }
     } catch (error) {
       console.error('Erro ao carregar dashboard:', error);
     } finally {
@@ -50,13 +76,21 @@ function Dashboard() {
   };
 
   const prepararDadosGrafico = () => {
-    // Criar array com os últimos 7 dias
-    const hoje = new Date();
+    // Se não há lançamentos, retorna array vazio
+    if (!localLancamentos || localLancamentos.length === 0) {
+      return [];
+    }
+    
+    // Encontra a data mais recente dos lançamentos filtrados
+    const datasOrdenadas = localLancamentos.map(l => l.data).sort().reverse();
+    const ultimaData = new Date(datasOrdenadas[0] + 'T12:00:00');
+    
+    // Criar array com os últimos 7 dias baseado na data mais recente
     const dias = [];
     
     for (let i = 6; i >= 0; i--) {
-      const data = new Date();
-      data.setDate(hoje.getDate() - i);
+      const data = new Date(ultimaData);
+      data.setDate(ultimaData.getDate() - i);
       const dataStr = data.toISOString().split('T')[0];
       const dataFormatada = data.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' });
       
@@ -170,7 +204,7 @@ function Dashboard() {
           <div className="value" style={{fontSize: '24px'}}>Mensal</div>
           <div className="subtitle" style={{fontSize: '13px', fontWeight: '600', color: '#4a5568'}}>
             <Calendar size={14} style={{display: 'inline', marginRight: '5px'}} />
-            {new Date().toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^./, c => c.toUpperCase())}
+            {mesReferencia ? mesReferencia.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' }).replace(/^./, c => c.toUpperCase()) : 'Carregando...'}
           </div>
         </div>
       </div>
