@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Plus, Trash2, Save, Eye } from 'lucide-react';
 import { useVariaveis } from '../contexts/VariaveisContext';
-import { useDados } from '../contexts/DadosContext';
 
 const API_URL = (process.env.REACT_APP_BACKEND_URL || '') + '/api';
 
@@ -13,7 +12,6 @@ function NovoLancamento() {
   
   // Usar cache de variáveis
   const { turnos, formatos, cores, carregarVariaveis, loading: loadingVars } = useVariaveis();
-  const { recarregarDados } = useDados();
   
   const [lancamento, setLancamento] = useState({
     data: new Date().toISOString().split('T')[0],
@@ -81,7 +79,8 @@ function NovoLancamento() {
     
     try {
       await axios.post(`${API_URL}/lancamentos`, lancamento);
-      await recarregarDados(); // Recarregar dados imediatamente após criar
+      // Pequeno delay para garantir que o Supabase processou
+      await new Promise(resolve => setTimeout(resolve, 500));
       alert('Lançamento criado com sucesso!');
       navigate('/lancamentos');
     } catch (error) {

@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { Eye, Edit, Trash2, FileText, FileSpreadsheet, Filter, X } from 'lucide-react';
 import axios from 'axios';
-import { useDados } from '../contexts/DadosContext';
 
 const API_URL = (process.env.REACT_APP_BACKEND_URL || '') + '/api';
 
@@ -11,7 +10,6 @@ const formatarKg = (valor) => {
 };
 
 function Lancamentos() {
-  const { carregarLancamentos, recarregarDados } = useDados();
   const [lancamentos, setLancamentos] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -20,23 +18,28 @@ function Lancamentos() {
   const [dataFim, setDataFim] = useState('');
   const [filtroAtivo, setFiltroAtivo] = useState(false);
 
-  useEffect(() => {
-    carregarDados();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const carregarDados = async (inicio = '', fim = '') => {
+  const carregarDados = useCallback(async (inicio = '', fim = '') => {
     setLoading(true);
     try {
-      const data = await carregarLancamentos(false, inicio, fim);
-      setLancamentos(data || []);
+      let url = `${API_URL}/lancamentos`;
+      const params = new URLSearchParams();
+      if (inicio) params.append('data_inicio', inicio);
+      if (fim) params.append('data_fim', fim);
+      if (params.toString()) url += `?${params.toString()}`;
+      
+      const response = await axios.get(url);
+      setLancamentos(response.data || []);
     } catch (error) {
       console.error('Erro ao carregar lançamentos:', error);
       setLancamentos([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    carregarDados();
+  }, [carregarDados]);
 
   const aplicarFiltro = () => {
     if (dataInicio || dataFim) {
@@ -57,22 +60,17 @@ function Lancamentos() {
       return;
     }
 
-    // Remover imediatamente da lista local (otimista)
-    const lancamentosAntigos = [...lancamentos];
+    // Remover imediatamente da lista local (feedback visual instantâneo)
     setLancamentos(prev => prev.filter(l => l.id !== id));
 
     try {
       await axios.delete(`${API_URL}/lancamentos/${id}`);
-      // Recarregar dados do servidor para garantir sincronização
-      if (!filtroAtivo) {
-        const dadosAtualizados = await recarregarDados();
-        setLancamentos(dadosAtualizados);
-      }
+      // Sucesso - item já foi removido visualmente
     } catch (error) {
       console.error('Erro ao excluir lançamento:', error);
-      // Restaurar lista se falhar
-      setLancamentos(lancamentosAntigos);
-      alert('Erro ao excluir lançamento. Tente novamente.');
+      alert('Erro ao excluir lançamento. Recarregando dados...');
+      // Recarregar dados em caso de erro
+      carregarDados(filtroAtivo ? dataInicio : '', filtroAtivo ? dataFim : '');
     }
   };
 

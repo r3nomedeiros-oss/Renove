@@ -3,7 +3,6 @@ import { useParams, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Plus, Trash2, Save, ArrowLeft, Eye } from 'lucide-react';
 import { useVariaveis } from '../contexts/VariaveisContext';
-import { useDados } from '../contexts/DadosContext';
 
 const API_URL = (process.env.REACT_APP_BACKEND_URL || '') + '/api';
 
@@ -15,7 +14,6 @@ function EditarLancamento() {
   
   // Usar cache de variáveis
   const { turnos, formatos, cores, carregarVariaveis } = useVariaveis();
-  const { recarregarDados } = useDados();
   
   const [lancamento, setLancamento] = useState({
     data: '',
@@ -73,7 +71,8 @@ function EditarLancamento() {
     
     try {
       await axios.put(`${API_URL}/lancamentos/${id}`, lancamento);
-      await recarregarDados(); // Recarregar dados imediatamente após editar
+      // Pequeno delay para garantir que o Supabase processou
+      await new Promise(resolve => setTimeout(resolve, 500));
       alert('Lançamento atualizado com sucesso!');
       navigate('/lancamentos');
     } catch (error) {

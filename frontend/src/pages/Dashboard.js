@@ -9,7 +9,7 @@ const formatarKg = (valor) => {
 };
 
 function Dashboard() {
-  const { lancamentos, stats, carregarLancamentos, carregarStats, loading } = useDados();
+  const { carregarLancamentos, carregarStats } = useDados();
   const [localLoading, setLocalLoading] = useState(true);
   const [localStats, setLocalStats] = useState(null);
   const [localLancamentos, setLocalLancamentos] = useState([]);
@@ -42,10 +42,10 @@ function Dashboard() {
         setMesReferencia(new Date(parseInt(ano), parseInt(mes) - 1, 1));
         
         // Busca stats do mês do último lançamento
-        statsData = await carregarStats(false, 'customizado', inicioMes, fimMes);
+        statsData = await carregarStats('customizado', inicioMes, fimMes);
       } else {
         setMesReferencia(new Date());
-        statsData = await carregarStats(false, 'mensal');
+        statsData = await carregarStats('mensal');
       }
       
       setLocalStats(statsData);
