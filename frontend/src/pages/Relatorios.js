@@ -307,7 +307,7 @@ function Relatorios() {
                   fontSize: '13px'
                 }}
               >
-                {itensExpandido ? 'Minimizar' : 'Expandir'}
+                {itensExpandido ? 'Clique para minimizar' : 'Clique para expandir'}
               </button>
             </div>
             
