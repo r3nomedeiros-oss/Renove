@@ -78,11 +78,13 @@ function NovoLancamento() {
     setLoading(true);
     
     try {
-      await axios.post(`${API_URL}/lancamentos`, lancamento);
-      // Pequeno delay para garantir que o Supabase processou
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Criar lançamento e receber o objeto criado
+      const response = await axios.post(`${API_URL}/lancamentos`, lancamento);
+      const novoLancamento = response.data;
+      
       alert('Lançamento criado com sucesso!');
-      navigate('/lancamentos');
+      // Navegar passando o novo lançamento no state para exibição imediata
+      navigate('/lancamentos', { state: { novoLancamento } });
     } catch (error) {
       console.error('Erro ao criar lançamento:', error);
       alert('Erro ao criar lançamento');

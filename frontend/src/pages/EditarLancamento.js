@@ -70,11 +70,13 @@ function EditarLancamento() {
     setLoading(true);
     
     try {
-      await axios.put(`${API_URL}/lancamentos/${id}`, lancamento);
-      // Pequeno delay para garantir que o Supabase processou
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Atualizar lançamento e receber o objeto atualizado
+      const response = await axios.put(`${API_URL}/lancamentos/${id}`, lancamento);
+      const lancamentoAtualizado = response.data;
+      
       alert('Lançamento atualizado com sucesso!');
-      navigate('/lancamentos');
+      // Navegar passando o lançamento atualizado no state
+      navigate('/lancamentos', { state: { lancamentoAtualizado } });
     } catch (error) {
       console.error('Erro ao atualizar lançamento:', error);
       alert('Erro ao atualizar lançamento');

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { Eye, Edit, Trash2, FileText, FileSpreadsheet, Filter, X } from 'lucide-react';
 import axios from 'axios';
 
@@ -10,6 +10,7 @@ const formatarKg = (valor) => {
 };
 
 function Lancamentos() {
+  const location = useLocation();
   const [lancamentos, setLancamentos] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -28,14 +29,35 @@ function Lancamentos() {
       if (params.toString()) url += `?${params.toString()}`;
       
       const response = await axios.get(url);
-      setLancamentos(response.data || []);
+      let dados = response.data || [];
+      
+      // Se veio um novo lançamento via state, adicionar no início se não existir
+      if (location.state?.novoLancamento) {
+        const novoId = location.state.novoLancamento.id;
+        const jaExiste = dados.some(l => l.id === novoId);
+        if (!jaExiste) {
+          dados = [location.state.novoLancamento, ...dados];
+        }
+        // Limpar o state para não adicionar novamente
+        window.history.replaceState({}, document.title);
+      }
+      
+      // Se veio um lançamento atualizado via state, substituir na lista
+      if (location.state?.lancamentoAtualizado) {
+        const atualizadoId = location.state.lancamentoAtualizado.id;
+        dados = dados.map(l => l.id === atualizadoId ? location.state.lancamentoAtualizado : l);
+        // Limpar o state
+        window.history.replaceState({}, document.title);
+      }
+      
+      setLancamentos(dados);
     } catch (error) {
       console.error('Erro ao carregar lançamentos:', error);
       setLancamentos([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [location.state]);
 
   useEffect(() => {
     carregarDados();
