@@ -1,58 +1,48 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useDados } from '../contexts/DadosContext';
 import { Eye, Edit, Trash2, FileText, FileSpreadsheet, Filter, X } from 'lucide-react';
 import axios from 'axios';
 
 const API_URL = (process.env.REACT_APP_BACKEND_URL || '') + '/api';
 
 const formatarKg = (valor) => {
-  return new Intl.NumberFormat('pt-BR').format(Math.round(valor));
+  return new Intl.NumberFormat('pt-BR').format(Math.round(valor || 0));
 };
 
 function Lancamentos() {
+  const { carregarLancamentos, invalidarCache, loadingLancamentos } = useDados();
   const [lancamentos, setLancamentos] = useState([]);
   const [loading, setLoading] = useState(true);
-  
-  // Filtros de data
-  const [dataInicio, setDataInicio] = useState('');
-  const [dataFim, setDataFim] = useState('');
-  const [filtroAtivo, setFiltroAtivo] = useState(false);
-
-  const carregarDados = useCallback(async (inicio = '', fim = '') => {
-    setLoading(true);
-    try {
-      let url = `${API_URL}/lancamentos`;
-      const params = new URLSearchParams();
-      if (inicio) params.append('data_inicio', inicio);
-      if (fim) params.append('data_fim', fim);
-      if (params.toString()) url += `?${params.toString()}`;
-      
-      const response = await axios.get(url);
-      setLancamentos(response.data || []);
-    } catch (error) {
-      console.error('Erro ao carregar lançamentos:', error);
-      setLancamentos([]);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const [filtroDataInicio, setFiltroDataInicio] = useState('');
+  const [filtroDataFim, setFiltroDataFim] = useState('');
 
   useEffect(() => {
     carregarDados();
-  }, [carregarDados]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
-  const aplicarFiltro = () => {
-    if (dataInicio || dataFim) {
-      carregarDados(dataInicio, dataFim);
-      setFiltroAtivo(true);
+  const carregarDados = async (filtros = {}) => {
+    setLoading(true);
+    try {
+      const data = await carregarLancamentos(false, {
+        dataInicio: filtros.dataInicio ?? filtroDataInicio,
+        dataFim: filtros.dataFim ?? filtroDataFim
+      });
+      setLancamentos(data || []);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const limparFiltro = () => {
-    setDataInicio('');
-    setDataFim('');
-    setFiltroAtivo(false);
-    carregarDados();
+  const handleFiltrar = () => {
+    carregarDados({ dataInicio: filtroDataInicio, dataFim: filtroDataFim });
+  };
+
+  const handleLimparFiltros = () => {
+    setFiltroDataInicio('');
+    setFiltroDataFim('');
+    carregarDados({ dataInicio: '', dataFim: '' });
   };
 
   const deletarLancamento = async (id) => {
@@ -60,17 +50,14 @@ function Lancamentos() {
       return;
     }
 
-    // Remover imediatamente da lista local (feedback visual instantâneo)
-    setLancamentos(prev => prev.filter(l => l.id !== id));
-
     try {
       await axios.delete(`${API_URL}/lancamentos/${id}`);
-      // Sucesso - item já foi removido visualmente
+      invalidarCache(); // Invalida o cache após deletar
+      alert('Lançamento excluído com sucesso!');
+      carregarDados(); // Recarrega os dados
     } catch (error) {
       console.error('Erro ao excluir lançamento:', error);
-      alert('Erro ao excluir lançamento. Recarregando dados...');
-      // Recarregar dados em caso de erro
-      carregarDados(filtroAtivo ? dataInicio : '', filtroAtivo ? dataFim : '');
+      alert('Erro ao excluir lançamento');
     }
   };
 
@@ -87,13 +74,15 @@ function Lancamentos() {
 
   const exportarHistoricoPDF = () => {
     const dataAtual = new Date().toLocaleDateString('pt-BR');
-    const periodoTexto = filtroAtivo ? `Período: ${dataInicio ? formatarData(dataInicio) : 'Início'} a ${dataFim ? formatarData(dataFim) : 'Fim'}` : 'Todos os lançamentos';
+    const periodoTexto = filtroDataInicio && filtroDataFim 
+      ? `Período: ${formatarData(filtroDataInicio)} até ${formatarData(filtroDataFim)}`
+      : 'Histórico Completo';
     const conteudo = `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Histórico de Produção</title>
+  <title>Histórico de Produção - ${periodoTexto}</title>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; color: #2d3748; }
     h1 { color: #1e40af; border-bottom: 2px solid #1e40af; padding-bottom: 10px; }
@@ -106,8 +95,8 @@ function Lancamentos() {
 </head>
 <body>
   <h1>Histórico de Produção - PolyTrack</h1>
+  <p><strong>${periodoTexto}</strong></p>
   <p>Gerado em: ${dataAtual}</p>
-  <p class="periodo">${periodoTexto}</p>
   <table>
     <thead>
       <tr>
@@ -123,21 +112,15 @@ function Lancamentos() {
         <tr>
           <td>${formatarData(lanc.data)} ${formatarHora(lanc.hora)}</td>
           <td>${lanc.turno}</td>
-          <td>${formatarKg(lanc.producao_total || 0)}</td>
-          <td>${formatarKg(lanc.perdas_total || 0)}</td>
+          <td>${formatarKg(lanc.producao_total)}</td>
+          <td>${formatarKg(lanc.perdas_total)}</td>
           <td>${lanc.percentual_perdas || 0}%</td>
         </tr>
       `).join('')}
     </tbody>
   </table>
   <div class="footer">PolyTrack - Sistema de Controle de Produção</div>
-  <script>
-    window.onload = () => {
-      setTimeout(() => {
-        window.print();
-      }, 500);
-    }
-  </script>
+  <script>window.onload = () => { setTimeout(() => { window.print(); }, 500); }</script>
 </body>
 </html>`;
     const blob = new Blob([conteudo], { type: 'text/html' });
@@ -148,7 +131,7 @@ function Lancamentos() {
   const exportarHistoricoExcel = () => {
     let csv = `Data;Hora;Turno;Produção (kg);Perdas (kg);% Perdas\n`;
     lancamentos.forEach(lanc => {
-      csv += `${formatarData(lanc.data)};${formatarHora(lanc.hora)};${lanc.turno};${formatarKg(lanc.producao_total || 0)};${formatarKg(lanc.perdas_total || 0)};${lanc.percentual_perdas || 0}%\n`;
+      csv += `${formatarData(lanc.data)};${formatarHora(lanc.hora)};${lanc.turno};${formatarKg(lanc.producao_total)};${formatarKg(lanc.perdas_total)};${lanc.percentual_perdas || 0}%\n`;
     });
     const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
     const url = window.URL.createObjectURL(blob);
@@ -193,8 +176,8 @@ function Lancamentos() {
               <input
                 type="date"
                 className="form-control"
-                value={dataInicio}
-                onChange={(e) => setDataInicio(e.target.value)}
+                value={filtroDataInicio}
+                onChange={(e) => setFiltroDataInicio(e.target.value)}
                 style={{padding: '8px', fontSize: '14px'}}
               />
             </div>
@@ -203,24 +186,24 @@ function Lancamentos() {
               <input
                 type="date"
                 className="form-control"
-                value={dataFim}
-                onChange={(e) => setDataFim(e.target.value)}
+                value={filtroDataFim}
+                onChange={(e) => setFiltroDataFim(e.target.value)}
                 style={{padding: '8px', fontSize: '14px'}}
               />
             </div>
           </div>
           <div className="filtros-botoes">
-            <button onClick={aplicarFiltro} className="btn btn-primary" style={{padding: '8px 15px', flex: 1}}>
+            <button onClick={handleFiltrar} className="btn btn-primary" style={{padding: '8px 15px', flex: 1}}>
               Filtrar
             </button>
-            {filtroAtivo && (
-              <button onClick={limparFiltro} className="btn btn-secondary" style={{padding: '8px 15px'}}>
+            {(filtroDataInicio || filtroDataFim) && (
+              <button onClick={handleLimparFiltros} className="btn btn-secondary" style={{padding: '8px 15px'}}>
                 <X size={14} />
               </button>
             )}
           </div>
         </div>
-        {filtroAtivo && (
+        {(filtroDataInicio || filtroDataFim) && (
           <div style={{marginTop: '10px', fontSize: '13px', color: '#667eea', fontWeight: '500'}}>
             Filtro ativo: {lancamentos.length} resultado(s)
           </div>
@@ -230,8 +213,8 @@ function Lancamentos() {
       {lancamentos.length === 0 ? (
         <div className="card empty-state">
           <h3>Nenhum lançamento encontrado</h3>
-          <p>{filtroAtivo ? 'Nenhum lançamento no período selecionado' : 'Comece criando um novo lançamento de produção'}</p>
-          {!filtroAtivo && (
+          <p>{(filtroDataInicio || filtroDataFim) ? 'Nenhum lançamento no período selecionado' : 'Comece criando um novo lançamento de produção'}</p>
+          {!(filtroDataInicio || filtroDataFim) && (
             <Link to="/novo-lancamento" className="btn btn-primary" style={{marginTop: '20px'}}>
               Novo Lançamento
             </Link>
@@ -263,10 +246,10 @@ function Lancamentos() {
                       <span className="badge badge-success">{lanc.turno}</span>
                     </td>
                     <td style={{fontWeight: '600', color: '#48bb78'}}>
-                      {formatarKg(lanc.producao_total || 0)} kg
+                      {formatarKg(lanc.producao_total)} kg
                     </td>
                     <td style={{fontWeight: '600', color: '#f56565'}}>
-                      {formatarKg(lanc.perdas_total || 0)} kg
+                      {formatarKg(lanc.perdas_total)} kg
                     </td>
                     <td>
                       <span className={`badge ${(lanc.percentual_perdas || 0) > 10 ? 'badge-danger' : 'badge-warning'}`}>

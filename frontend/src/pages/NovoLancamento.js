@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Plus, Trash2, Save, Eye } from 'lucide-react';
 import { useVariaveis } from '../contexts/VariaveisContext';
+import { useDados } from '../contexts/DadosContext';
 
 const API_URL = (process.env.REACT_APP_BACKEND_URL || '') + '/api';
 
@@ -12,6 +13,7 @@ function NovoLancamento() {
   
   // Usar cache de variáveis
   const { turnos, formatos, cores, carregarVariaveis, loading: loadingVars } = useVariaveis();
+  const { invalidarCache } = useDados();
   
   const [lancamento, setLancamento] = useState({
     data: new Date().toISOString().split('T')[0],
@@ -78,15 +80,14 @@ function NovoLancamento() {
     setLoading(true);
     
     try {
-      // Criar lançamento
       await axios.post(`${API_URL}/lancamentos`, lancamento);
-      
-      // O Supabase é rápido, apenas navegar
+      invalidarCache(); // Invalida o cache após criar
       alert('Lançamento criado com sucesso!');
       navigate('/lancamentos');
     } catch (error) {
       console.error('Erro ao criar lançamento:', error);
       alert('Erro ao criar lançamento');
+    } finally {
       setLoading(false);
     }
   };
