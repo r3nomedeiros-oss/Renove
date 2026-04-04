@@ -199,6 +199,7 @@ export const DadosProvider = ({ children }) => {
       loadingStats,
       carregarLancamentos,
       carregarStatsMensal,
+      carregarStats: carregarStatsMensal, // Alias para compatibilidade
       invalidarCache
     }}>
       {children}
