@@ -207,6 +207,22 @@ function Lancamentos() {
           <p>Histórico de produção</p>
         </div>
         <div style={{display: 'flex', gap: '10px'}}>
+          <button
+            onClick={() => setConsolidado(!consolidado)}
+            className="btn btn-primary"
+            style={{padding: '8px 15px', fontSize: '13px'}}
+            title={consolidado ? 'Mostrar lançamentos individuais por turno' : 'Unificar lançamentos do mesmo dia'}
+          >
+            {consolidado ? (
+              <>
+                <List size={14} /> Ver por Turno
+              </>
+            ) : (
+              <>
+                <Layers size={14} /> Consolidar por Dia
+              </>
+            )}
+          </button>
           <button onClick={exportarHistoricoPDF} className="btn btn-danger" style={{padding: '8px 15px', fontSize: '13px'}}>
             <FileText size={14} /> PDF
           </button>
@@ -260,30 +276,6 @@ function Lancamentos() {
             Filtro ativo: {lancamentosExibidos.length} resultado(s)
           </div>
         )}
-        <div style={{marginTop: '12px', paddingTop: '12px', borderTop: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', flexWrap: 'wrap'}}>
-          <div style={{fontSize: '13px', color: '#4a5568'}}>
-            <strong>Visualização:</strong>{' '}
-            <span style={{color: consolidado ? '#667eea' : '#48bb78', fontWeight: '600'}}>
-              {consolidado ? 'Consolidada por dia' : 'Por turno (detalhada)'}
-            </span>
-          </div>
-          <button
-            onClick={() => setConsolidado(!consolidado)}
-            className={`btn ${consolidado ? 'btn-secondary' : 'btn-primary'}`}
-            style={{padding: '8px 15px', fontSize: '13px', display: 'flex', alignItems: 'center', gap: '6px'}}
-            title={consolidado ? 'Mostrar lançamentos individuais por turno' : 'Unificar lançamentos do mesmo dia'}
-          >
-            {consolidado ? (
-              <>
-                <List size={14} /> Ver por Turno
-              </>
-            ) : (
-              <>
-                <Layers size={14} /> Consolidar por Dia
-              </>
-            )}
-          </button>
-        </div>
       </div>
 
       {lancamentosExibidos.length === 0 ? (
