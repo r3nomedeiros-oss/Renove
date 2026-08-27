@@ -381,6 +381,12 @@ function EditarLancamento() {
                   <div style={{fontSize: '18px', fontWeight: '600', color: '#111827'}}>{lancamento.turno || '-'}</div>
                 </div>
               </div>
+              {lancamento.referencia && (
+                <div style={{marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e5e7eb'}}>
+                  <div style={{fontSize: '13px', color: '#2563eb', marginBottom: '4px', fontWeight: '600'}}>Referência de Produção</div>
+                  <div style={{fontSize: '18px', fontWeight: '700', color: '#1e3a8a'}}>{lancamento.referencia}</div>
+                </div>
+              )}
             </div>
 
             {/* Itens de Produção - Card Branco */}
