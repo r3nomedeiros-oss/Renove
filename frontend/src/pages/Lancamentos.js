@@ -32,12 +32,14 @@ function Lancamentos() {
           producao_total: 0,
           perdas_total: 0,
           turnos: new Set(),
+          referencias: new Set(),
           quantidade_lancamentos: 0,
         };
       }
       agrupados[chave].producao_total += Number(lanc.producao_total) || 0;
       agrupados[chave].perdas_total += Number(lanc.perdas_total) || 0;
       if (lanc.turno) agrupados[chave].turnos.add(lanc.turno);
+      if (lanc.referencia) agrupados[chave].referencias.add(lanc.referencia);
       agrupados[chave].quantidade_lancamentos += 1;
     });
 
@@ -45,6 +47,7 @@ function Lancamentos() {
       .map((item) => ({
         ...item,
         turnos: Array.from(item.turnos).join(', '),
+        referencias: Array.from(item.referencias).join(', '),
         percentual_perdas:
           item.producao_total > 0
             ? Number(((item.perdas_total / item.producao_total) * 100).toFixed(2))
@@ -115,12 +118,13 @@ function Lancamentos() {
       : 'Histórico Completo';
     const tipoVisualizacao = consolidado ? ' (Consolidado por Dia)' : '';
     const cabecalhos = consolidado
-      ? `<th>Data</th><th>Turnos</th><th>Produção (kg)</th><th>Perdas (kg)</th><th>% Perdas</th>`
+      ? `<th>Data</th><th>Referência</th><th>Turnos</th><th>Produção (kg)</th><th>Perdas (kg)</th><th>% Perdas</th>`
       : `<th>Data/Hora</th><th>Referência</th><th>Turno</th><th>Produção (kg)</th><th>Perdas (kg)</th><th>% Perdas</th>`;
     const linhas = consolidado
       ? lancamentosExibidos.map(lanc => `
         <tr>
           <td>${formatarData(lanc.data)}</td>
+          <td>${lanc.referencias || '-'}</td>
           <td>${lanc.turnos || '-'}</td>
           <td>${formatarKg(lanc.producao_total)}</td>
           <td>${formatarKg(lanc.perdas_total)}</td>
@@ -176,11 +180,11 @@ function Lancamentos() {
 
   const exportarHistoricoExcel = () => {
     let csv = consolidado
-      ? `Data;Turnos;Produção (kg);Perdas (kg);% Perdas\n`
+      ? `Data;Referência;Turnos;Produção (kg);Perdas (kg);% Perdas\n`
       : `Data;Hora;Referência;Turno;Produção (kg);Perdas (kg);% Perdas\n`;
     lancamentosExibidos.forEach(lanc => {
       if (consolidado) {
-        csv += `${formatarData(lanc.data)};${lanc.turnos || '-'};${formatarKg(lanc.producao_total)};${formatarKg(lanc.perdas_total)};${lanc.percentual_perdas || 0}%\n`;
+        csv += `${formatarData(lanc.data)};${lanc.referencias || '-'};${lanc.turnos || '-'};${formatarKg(lanc.producao_total)};${formatarKg(lanc.perdas_total)};${lanc.percentual_perdas || 0}%\n`;
       } else {
         csv += `${formatarData(lanc.data)};${formatarHora(lanc.hora)};${lanc.referencia || '-'};${lanc.turno};${formatarKg(lanc.producao_total)};${formatarKg(lanc.perdas_total)};${lanc.percentual_perdas || 0}%\n`;
       }
@@ -309,6 +313,7 @@ function Lancamentos() {
                   {consolidado ? (
                     <>
                       <th>Data</th>
+                      <th>Referência</th>
                       <th>Turnos</th>
                       <th>Produção</th>
                       <th>Perdas</th>
@@ -336,6 +341,13 @@ function Lancamentos() {
                           <div style={{fontWeight: '600'}}>
                             {formatarData(lanc.data)}
                           </div>
+                        </td>
+                        <td>
+                          {lanc.referencias ? (
+                            <span style={{color: '#1e40af', fontWeight: '500'}}>{lanc.referencias}</span>
+                          ) : (
+                            <span style={{color: '#a0aec0'}}>-</span>
+                          )}
                         </td>
                         <td>
                           {(lanc.turnos || '').split(',').map((t, idx) => (

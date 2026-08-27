@@ -264,3 +264,5 @@ agent_communication:
     message: "CORREÇÃO APLICADA: Fórmula de % Perdas corrigida de (Perdas/(Produção+Perdas)*100) para (Perdas/Produção*100) em todos os endpoints (lancamentos, relatorios) e no Dashboard frontend."
   - agent: "testing"
     message: "✅ FEATURE TESTADA: Campo 'referencia' em Lançamentos - Todos os 5 testes passaram (CREATE com/sem referencia, GET by ID, GET list, cálculos, UPDATE). Bug encontrado e corrigido: UPDATE endpoint não incluía 'referencia' no doc de atualização (linha 331 server.py). Após correção, todos os testes passaram incluindo capacidade de atualizar o valor de referencia."
+  - agent: "testing"
+    message: "✅ E2E TEST PASSED: Referência de Produção flow testado completamente. TEST 1: Criado lançamento com referencia 'Cliente Teste ABC' - salvo com sucesso. TEST 2: Coluna REFERÊNCIA presente na view 'por Turno' e mostra 'Cliente Teste ABC' corretamente. TEST 3: View consolidada mostra coluna REFERÊNCIA com valor correto, coluna 'Lançamentos' ausente conforme esperado. Todos os 3 testes passaram sem issues críticos."
