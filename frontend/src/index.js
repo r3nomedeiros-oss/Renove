@@ -10,15 +10,17 @@ root.render(
   </React.StrictMode>,
 );
 
-// PWA Service Worker Registration
+// PWA Service Worker desativado: remove qualquer SW antigo e limpa o cache
+// para garantir que o usuario sempre carregue a versao mais recente do app.
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/service-worker.js')
-      .then((registration) => {
-        console.log('PWA: Service Worker registrado com sucesso');
-      })
-      .catch((error) => {
-        console.log('PWA: Falha ao registrar Service Worker:', error);
-      });
-  });
+  navigator.serviceWorker.getRegistrations()
+    .then((registrations) => {
+      registrations.forEach((registration) => registration.unregister());
+    })
+    .catch(() => {});
+}
+if (typeof caches !== 'undefined' && caches.keys) {
+  caches.keys()
+    .then((keys) => keys.forEach((key) => caches.delete(key)))
+    .catch(() => {});
 }
