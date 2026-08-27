@@ -162,13 +162,22 @@ def listar_lancamentos():
         if not lancamentos:
             return jsonify([])
 
-        # Buscar todos os itens dos lançamentos listados
+        # Buscar todos os itens (paginado, evita limite padrao de 1000 do Supabase)
         lanc_ids = [l['id'] for l in lancamentos]
-        itens_response = supabase.table("itens_producao").select("*").in_("lancamento_id", lanc_ids).execute()
+        all_itens = []
+        page_size = 1000
+        start = 0
+        while True:
+            it_resp = supabase.table("itens_producao").select("*").in_("lancamento_id", lanc_ids).range(start, start + page_size - 1).execute()
+            batch = it_resp.data or []
+            all_itens.extend(batch)
+            if len(batch) < page_size:
+                break
+            start += page_size
         
         # Agrupar itens por lancamento_id
         itens_por_lanc = {}
-        for item in itens_response.data:
+        for item in all_itens:
             lid = item['lancamento_id']
             if lid not in itens_por_lanc:
                 itens_por_lanc[lid] = []

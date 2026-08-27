@@ -195,6 +195,30 @@ async def delete_user(user_id: str):
 
 # ==================== LANCAMENTOS ROUTES ====================
 
+def fetch_all_itens(lanc_ids):
+    """Busca todos os itens dos lançamentos paginando para evitar o limite padrão
+    de 1000 linhas do Supabase (que cortava os itens dos lançamentos mais novos)."""
+    all_itens = []
+    if not lanc_ids:
+        return all_itens
+    page_size = 1000
+    start = 0
+    while True:
+        resp = (
+            supabase.table("itens_producao")
+            .select("*")
+            .in_("lancamento_id", lanc_ids)
+            .range(start, start + page_size - 1)
+            .execute()
+        )
+        batch = resp.data or []
+        all_itens.extend(batch)
+        if len(batch) < page_size:
+            break
+        start += page_size
+    return all_itens
+
+
 @api_router.get("/lancamentos", response_model=List[LancamentoResponse])
 async def get_lancamentos(data_inicio: Optional[str] = None, data_fim: Optional[str] = None):
     try:
@@ -210,13 +234,13 @@ async def get_lancamentos(data_inicio: Optional[str] = None, data_fim: Optional[
         if not response.data:
             return []
         
-        # Buscar TODOS os itens de uma vez (otimização N+1)
+        # Buscar TODOS os itens de uma vez (paginado, evita limite de 1000)
         lancamento_ids = [lanc['id'] for lanc in response.data]
-        all_itens_response = supabase.table("itens_producao").select("*").in_("lancamento_id", lancamento_ids).execute()
+        all_itens = fetch_all_itens(lancamento_ids)
         
         # Agrupar itens por lancamento_id
         itens_por_lancamento = {}
-        for item in (all_itens_response.data or []):
+        for item in all_itens:
             lanc_id = item['lancamento_id']
             if lanc_id not in itens_por_lancamento:
                 itens_por_lancamento[lanc_id] = []
@@ -431,10 +455,9 @@ async def get_relatorios(periodo: str = "mensal", data_inicio: Optional[str] = N
                 "por_referencia": {}
             }
         
-        # Buscar TODOS os itens de uma vez (otimização N+1)
+        # Buscar TODOS os itens de uma vez (paginado, evita limite de 1000)
         lancamento_ids = [lanc['id'] for lanc in lancamentos]
-        all_itens_response = supabase.table("itens_producao").select("*").in_("lancamento_id", lancamento_ids).execute()
-        all_itens = all_itens_response.data or []
+        all_itens = fetch_all_itens(lancamento_ids)
         
         # Agrupar itens por lancamento_id
         itens_por_lancamento = {}

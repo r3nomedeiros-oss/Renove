@@ -335,6 +335,189 @@ class PolyTrackTester:
         except Exception as e:
             self.log_test_result('relatorios', "Exception in relatorios tests", False, str(e))
 
+    def test_producao_total_bug_fix(self):
+        """
+        BUG FIX VERIFICATION: Test that producao_total is correctly calculated for ALL lançamentos,
+        especially the most recent ones (which were previously returning 0 due to Supabase 1000-row limit).
+        """
+        print("\n🐛 Testing Bug Fix: producao_total calculation with pagination...")
+        
+        try:
+            # TEST 1: GET all lançamentos and verify producao_total consistency
+            print("\n--- TEST 1: Verify all lançamentos have correct producao_total ---")
+            response = self.session.get(f"{self.base_url}/lancamentos")
+            
+            if response.status_code != 200:
+                self.log_test_result('lancamentos', "BUG FIX TEST 1: GET /api/lancamentos", False,
+                    f"Failed to fetch lançamentos. Status: {response.status_code}, Response: {response.text}")
+                return
+            
+            all_lancamentos = response.json()
+            total_count = len(all_lancamentos)
+            
+            # Count lançamentos with producao_total = 0 that have items
+            zero_producao_with_items = []
+            inconsistent_producao = []
+            
+            for lanc in all_lancamentos:
+                producao_total = lanc.get('producao_total', 0)
+                itens = lanc.get('itens', [])
+                
+                # Calculate expected producao_total from items
+                expected_producao = sum(item.get('producao_kg', 0) for item in itens)
+                
+                # Check if producao_total is 0 but has items
+                if producao_total == 0 and len(itens) > 0:
+                    zero_producao_with_items.append({
+                        'id': lanc.get('id'),
+                        'data': lanc.get('data'),
+                        'turno': lanc.get('turno'),
+                        'items_count': len(itens),
+                        'expected_producao': expected_producao
+                    })
+                
+                # Check if producao_total matches sum of items
+                if abs(producao_total - expected_producao) > 0.01:  # Allow small floating point differences
+                    inconsistent_producao.append({
+                        'id': lanc.get('id'),
+                        'data': lanc.get('data'),
+                        'turno': lanc.get('turno'),
+                        'producao_total': producao_total,
+                        'expected_producao': expected_producao,
+                        'difference': producao_total - expected_producao
+                    })
+            
+            # Report results
+            if len(zero_producao_with_items) == 0 and len(inconsistent_producao) == 0:
+                self.log_test_result('lancamentos', "BUG FIX TEST 1: producao_total consistency", True,
+                    f"All {total_count} lançamentos have correct producao_total. No lançamentos with producao_total=0 while having items.")
+            else:
+                details = f"Found issues in {len(zero_producao_with_items) + len(inconsistent_producao)} lançamentos out of {total_count}. "
+                if zero_producao_with_items:
+                    details += f"{len(zero_producao_with_items)} have producao_total=0 with items: {zero_producao_with_items[:3]}. "
+                if inconsistent_producao:
+                    details += f"{len(inconsistent_producao)} have inconsistent producao_total: {inconsistent_producao[:3]}."
+                self.log_test_result('lancamentos', "BUG FIX TEST 1: producao_total consistency", False, details)
+            
+            # TEST 2: Verify the 5 most recent lançamentos (ordered by data desc, hora desc)
+            print("\n--- TEST 2: Verify 5 most recent lançamentos (list vs detail) ---")
+            
+            # Get the 5 most recent from the list
+            most_recent = all_lancamentos[:5]  # Already ordered by data desc, hora desc
+            
+            mismatches = []
+            for lanc in most_recent:
+                lanc_id = lanc.get('id')
+                list_producao = lanc.get('producao_total', 0)
+                
+                # Fetch detail for this lançamento
+                detail_response = self.session.get(f"{self.base_url}/lancamentos/{lanc_id}")
+                
+                if detail_response.status_code != 200:
+                    mismatches.append({
+                        'id': lanc_id,
+                        'data': lanc.get('data'),
+                        'error': f"Failed to fetch detail: {detail_response.status_code}"
+                    })
+                    continue
+                
+                detail_lanc = detail_response.json()
+                detail_producao = detail_lanc.get('producao_total', 0)
+                
+                # Compare list vs detail
+                if abs(list_producao - detail_producao) > 0.01:
+                    mismatches.append({
+                        'id': lanc_id,
+                        'data': lanc.get('data'),
+                        'turno': lanc.get('turno'),
+                        'list_producao': list_producao,
+                        'detail_producao': detail_producao,
+                        'difference': list_producao - detail_producao
+                    })
+            
+            if len(mismatches) == 0:
+                self.log_test_result('lancamentos', "BUG FIX TEST 2: Recent lançamentos list vs detail", True,
+                    f"All 5 most recent lançamentos have matching producao_total in list and detail views.")
+            else:
+                self.log_test_result('lancamentos', "BUG FIX TEST 2: Recent lançamentos list vs detail", False,
+                    f"Found {len(mismatches)} mismatches: {mismatches}")
+            
+            # TEST 3: GET /api/relatorios?periodo=anual
+            print("\n--- TEST 3: Verify annual report with pagination ---")
+            response = self.session.get(f"{self.base_url}/relatorios", params={"periodo": "anual"})
+            
+            if response.status_code != 200:
+                self.log_test_result('relatorios', "BUG FIX TEST 3: GET /api/relatorios?periodo=anual", False,
+                    f"Failed to fetch annual report. Status: {response.status_code}, Response: {response.text}")
+            else:
+                annual_report = response.json()
+                producao_total = annual_report.get('producao_total', 0)
+                por_turno = annual_report.get('por_turno', {})
+                por_referencia = annual_report.get('por_referencia', {})
+                
+                # Check required keys
+                has_por_turno = 'por_turno' in annual_report
+                has_por_referencia = 'por_referencia' in annual_report
+                
+                if has_por_turno and has_por_referencia and producao_total > 0:
+                    self.log_test_result('relatorios', "BUG FIX TEST 3: Annual report structure", True,
+                        f"Annual report has producao_total={producao_total}kg, por_turno with {len(por_turno)} turnos, "
+                        f"por_referencia with {len(por_referencia)} referencias.")
+                else:
+                    missing = []
+                    if not has_por_turno:
+                        missing.append("por_turno")
+                    if not has_por_referencia:
+                        missing.append("por_referencia")
+                    if producao_total == 0:
+                        missing.append("producao_total is 0")
+                    self.log_test_result('relatorios', "BUG FIX TEST 3: Annual report structure", False,
+                        f"Annual report missing or has issues: {missing}")
+            
+            # TEST 4: Regression test - date filtering
+            print("\n--- TEST 4: Regression test - date filtering ---")
+            response = self.session.get(f"{self.base_url}/lancamentos", 
+                                      params={"data_inicio": "2026-08-01", "data_fim": "2026-08-31"})
+            
+            if response.status_code != 200:
+                self.log_test_result('lancamentos', "BUG FIX TEST 4: Date filtering regression", False,
+                    f"Failed to fetch filtered lançamentos. Status: {response.status_code}")
+            else:
+                filtered_lancamentos = response.json()
+                
+                # Verify all returned lançamentos are within the date range
+                out_of_range = []
+                all_have_correct_producao = True
+                
+                for lanc in filtered_lancamentos:
+                    data = lanc.get('data', '')
+                    
+                    # Check date range
+                    if data < "2026-08-01" or data > "2026-08-31":
+                        out_of_range.append({'id': lanc.get('id'), 'data': data})
+                    
+                    # Check producao_total consistency
+                    producao_total = lanc.get('producao_total', 0)
+                    itens = lanc.get('itens', [])
+                    expected_producao = sum(item.get('producao_kg', 0) for item in itens)
+                    
+                    if abs(producao_total - expected_producao) > 0.01:
+                        all_have_correct_producao = False
+                
+                if len(out_of_range) == 0 and all_have_correct_producao:
+                    self.log_test_result('lancamentos', "BUG FIX TEST 4: Date filtering regression", True,
+                        f"Date filtering works correctly. {len(filtered_lancamentos)} lançamentos in range, all with correct producao_total.")
+                else:
+                    details = ""
+                    if out_of_range:
+                        details += f"{len(out_of_range)} lançamentos out of range: {out_of_range[:3]}. "
+                    if not all_have_correct_producao:
+                        details += "Some lançamentos have incorrect producao_total."
+                    self.log_test_result('lancamentos', "BUG FIX TEST 4: Date filtering regression", False, details)
+                    
+        except Exception as e:
+            self.log_test_result('lancamentos', "BUG FIX TESTS: Exception", False, str(e))
+
     def test_basic_connectivity(self):
         """Test basic API connectivity"""
         print("🔗 Testing basic connectivity...")
@@ -426,7 +609,36 @@ class PolyTrackTester:
             
         # Print summary
         self.print_summary()
+    
+    def run_bug_fix_tests(self):
+        """Run only the bug fix verification tests"""
+        print("🚀 Starting PolyTrack Bug Fix Verification Tests")
+        print(f"Backend URL: {self.base_url}")
+        print("Bug: producao_total = 0 for recent lançamentos due to Supabase 1000-row limit")
+        print("Fix: Implemented pagination in fetch_all_itens() helper\n")
+        
+        # Test connectivity first
+        if not self.test_basic_connectivity():
+            print("❌ Cannot proceed - backend not accessible")
+            return
+        
+        try:
+            # Run bug fix verification tests
+            self.test_producao_total_bug_fix()
+            
+        finally:
+            # No cleanup needed for read-only tests
+            pass
+            
+        # Print summary
+        self.print_summary()
 
 if __name__ == "__main__":
+    import sys
     tester = PolyTrackTester()
-    tester.run_all_tests()
+    
+    # Check if we should run bug fix tests only
+    if len(sys.argv) > 1 and sys.argv[1] == "--bug-fix":
+        tester.run_bug_fix_tests()
+    else:
+        tester.run_all_tests()
