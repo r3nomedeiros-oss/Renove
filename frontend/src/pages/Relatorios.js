@@ -103,11 +103,11 @@ function Relatorios() {
     <div class="stat-box"><strong>Dias Produzidos</strong><div class="value">${relatorio.dias_produzidos}</div></div>
   </div>
   
-  <h2>Detalhamento por Turno</h2>
+  <h2>Detalhamento por Referência de Produção</h2>
   <table>
     <thead>
       <tr>
-        <th>Turno</th>
+        <th>Referência</th>
         <th>Produção (kg)</th>
         <th>Perdas (kg)</th>
         <th>% Perdas</th>
@@ -116,9 +116,9 @@ function Relatorios() {
       </tr>
     </thead>
     <tbody>
-      ${Object.entries(relatorio.por_turno).map(([turno, dados]) => `
+      ${Object.entries(relatorio.por_referencia || {}).map(([referencia, dados]) => `
         <tr>
-          <td><strong>Turno ${turno}</strong></td>
+          <td><strong>${referencia}</strong></td>
           <td>${formatarKg(dados.producao)}</td>
           <td>${formatarKg(dados.perdas)}</td>
           <td>${dados.percentual_perdas}%</td>
@@ -159,10 +159,10 @@ function Relatorios() {
     csv += `Percentual de Perdas;${relatorio.percentual_perdas}%\n`;
     csv += `Média Diária;${formatarKg(relatorio.media_diaria)} kg\n`;
     csv += `Dias Produzidos;${relatorio.dias_produzidos}\n\n`;
-    csv += `DETALHES POR TURNO\n`;
-    csv += `Turno;Produção (kg);Perdas (kg);% Perdas;Média Diária;Dias Produzidos\n`;
-    Object.entries(relatorio.por_turno).forEach(([turno, dados]) => {
-      csv += `Turno ${turno};${formatarKg(dados.producao)};${formatarKg(dados.perdas)};${dados.percentual_perdas}%;${formatarKg(dados.media_diaria)};${dados.dias_produzidos}\n`;
+    csv += `DETALHES POR REFERÊNCIA DE PRODUÇÃO\n`;
+    csv += `Referência;Produção (kg);Perdas (kg);% Perdas;Média Diária;Dias Produzidos\n`;
+    Object.entries(relatorio.por_referencia || {}).forEach(([referencia, dados]) => {
+      csv += `${referencia};${formatarKg(dados.producao)};${formatarKg(dados.perdas)};${dados.percentual_perdas}%;${formatarKg(dados.media_diaria)};${dados.dias_produzidos}\n`;
     });
     
     // Adicionar itens se expandido
@@ -244,12 +244,12 @@ function Relatorios() {
           </div>
 
           <div className="card">
-            <h2 style={{marginBottom: '20px'}}>Detalhamento por Turno</h2>
+            <h2 style={{marginBottom: '20px'}}>Detalhamento por Referência de Produção</h2>
             <div className="table-container">
               <table>
                 <thead>
                   <tr>
-                    <th>Turno</th>
+                    <th>Referência</th>
                     <th>Produção (kg)</th>
                     <th>Perdas (kg)</th>
                     <th>% Perdas</th>
@@ -258,9 +258,9 @@ function Relatorios() {
                   </tr>
                 </thead>
                 <tbody>
-                  {Object.entries(relatorio.por_turno).map(([turno, dados]) => (
-                    <tr key={turno}>
-                      <td><strong>Turno {turno}</strong></td>
+                  {Object.entries(relatorio.por_referencia || {}).map(([referencia, dados]) => (
+                    <tr key={referencia}>
+                      <td><strong>{referencia}</strong></td>
                       <td>{formatarKg(dados.producao)} kg</td>
                       <td>{formatarKg(dados.perdas)} kg</td>
                       <td><span className={`badge ${dados.percentual_perdas > 10 ? 'badge-danger' : 'badge-warning'}`}>{dados.percentual_perdas}%</span></td>

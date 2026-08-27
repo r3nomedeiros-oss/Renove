@@ -427,7 +427,8 @@ async def get_relatorios(periodo: str = "mensal", data_inicio: Optional[str] = N
                     'B': {"producao": 0, "perdas": 0, "percentual_perdas": 0, "media_diaria": 0, "dias_produzidos": 0},
                     'Administrativo': {"producao": 0, "perdas": 0, "percentual_perdas": 0, "media_diaria": 0, "dias_produzidos": 0}
                 },
-                "itens_por_formato_cor": []
+                "itens_por_formato_cor": [],
+                "por_referencia": {}
             }
         
         # Buscar TODOS os itens de uma vez (otimização N+1)
@@ -516,6 +517,31 @@ async def get_relatorios(periodo: str = "mensal", data_inicio: Optional[str] = N
                     "dias_produzidos": 0
                 }
         
+        # Por referência de produção
+        por_referencia = {}
+        for lanc in lancamentos:
+            referencia = lanc.get('referencia') or 'Sem Referência'
+            if referencia not in por_referencia:
+                por_referencia[referencia] = {
+                    "producao": 0,
+                    "perdas": 0,
+                    "dias": set()
+                }
+            por_referencia[referencia]['producao'] += lanc.get('producao_total', 0)
+            por_referencia[referencia]['perdas'] += lanc.get('perdas_total', 0)
+            por_referencia[referencia]['dias'].add(lanc['data'])
+
+        por_referencia_formatado = {}
+        for referencia, dados in por_referencia.items():
+            dias_ref = len(dados['dias'])
+            por_referencia_formatado[referencia] = {
+                "producao": round(dados['producao'], 2),
+                "perdas": round(dados['perdas'], 2),
+                "percentual_perdas": round((dados['perdas'] / dados['producao'] * 100), 2) if dados['producao'] > 0 else 0,
+                "media_diaria": round(dados['producao'] / dias_ref, 2) if dias_ref > 0 else 0,
+                "dias_produzidos": dias_ref
+            }
+
         # Formatar itens por formato e cor
         itens_lista = sorted(itens_por_formato_cor.values(), key=lambda x: x['producao_total'], reverse=True)
         
@@ -526,6 +552,7 @@ async def get_relatorios(periodo: str = "mensal", data_inicio: Optional[str] = N
             "media_diaria": media_diaria,
             "dias_produzidos": dias_produzidos,
             "por_turno": por_turno_formatado,
+            "por_referencia": por_referencia_formatado,
             "itens_por_formato_cor": itens_lista
         }
     except Exception as e:
