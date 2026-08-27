@@ -168,14 +168,17 @@ backend:
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: false
+    needs_retesting: true
     status_history:
       - working: true
         agent: "main"
-        comment: "Campo 'referencia' (Optional) adicionado ao create_lancamento e persistido no Supabase (coluna referencia adicionada via SQL). Update NAO grava referencia para preservar valor ao editar."
+        comment: "Campo 'referencia' (Optional) adicionado ao create_lancamento e persistido no Supabase (coluna referencia adicionada via SQL)."
       - working: true
         agent: "testing"
         comment: "Todos os testes passaram: cria/persiste/retorna referencia; regressao sem referencia OK; calculos corretos."
+      - working: true
+        agent: "main"
+        comment: "PUT /lancamentos/{id} agora tambem grava referencia (para suportar edicao pela tela Editar Lancamento). Precisa retestar UPDATE."
 
 frontend:
   - task: "Campo Referência de Produção (Novo Lançamento)"

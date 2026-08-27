@@ -23,6 +23,7 @@ function EditarLancamento() {
     hora: '',
     orelha_kg: '',
     aparas_kg: '',
+    referencia: '',
     itens: []
   });
 
@@ -200,6 +201,42 @@ function EditarLancamento() {
                 onChange={(e) => setLancamento({...lancamento, aparas_kg: e.target.value})}
                 required
               />
+            </div>
+          </div>
+
+          <div style={{
+            marginTop: '20px',
+            background: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            borderRadius: '12px',
+            padding: '20px'
+          }}>
+            <label style={{
+              display: 'block',
+              fontSize: '16px',
+              fontWeight: '600',
+              color: '#2563eb',
+              marginBottom: '10px'
+            }}>
+              Referência de Produção
+            </label>
+            <input
+              type="text"
+              value={lancamento.referencia || ''}
+              onChange={(e) => setLancamento({...lancamento, referencia: e.target.value})}
+              placeholder="Ex: Produção para Cliente X"
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                fontSize: '15px',
+                border: '2px solid #3b82f6',
+                borderRadius: '8px',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
+            <div style={{fontSize: '13px', color: '#6b7280', marginTop: '8px'}}>
+              Destaque para que vai a produção
             </div>
           </div>
         </div>

@@ -114,6 +114,19 @@ function DetalhesLancamento() {
           <p style={{fontSize: '11px', color: '#718096', margin: '4px 0 0 0'}}>{lancamento.hora}</p>
         </div>
 
+        {lancamento.referencia && (
+          <div style={{
+            background: '#eff6ff',
+            border: '1px solid #bfdbfe',
+            borderRadius: '8px',
+            padding: '10px 12px',
+            marginBottom: '14px'
+          }}>
+            <p style={{fontSize: '10px', color: '#2563eb', margin: '0 0 2px 0', fontWeight: '700', textTransform: 'uppercase'}}>Referência de Produção</p>
+            <p style={{fontSize: '14px', color: '#1e3a8a', margin: '0', fontWeight: '700'}}>{lancamento.referencia}</p>
+          </div>
+        )}
+
         <div style={{marginBottom: '14px'}}>
           <div style={{display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '10px'}}>
             <div style={{background: '#f0f4ff', padding: '12px', borderRadius: '8px', borderLeft: '4px solid #1e40af'}}>

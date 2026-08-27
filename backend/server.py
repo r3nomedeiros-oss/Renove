@@ -329,6 +329,7 @@ async def update_lancamento(lancamento_id: str, lancamento: LancamentoCreate):
             "hora": lancamento.hora,
             "orelha_kg": lancamento.orelha_kg,
             "aparas_kg": lancamento.aparas_kg,
+            "referencia": lancamento.referencia,
             "producao_total": producao_total,
             "perdas_total": perdas_total,
             "percentual_perdas": percentual_perdas
