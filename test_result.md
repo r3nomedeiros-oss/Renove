@@ -150,7 +150,46 @@ backend:
         agent: "main"
         comment: "Adicionado itens_por_formato_cor no retorno"
 
+  - task: "Campo Referência de Produção em Lançamentos"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "testing"
+        comment: "Campo opcional 'referencia' implementado e testado. Todos os testes passaram: CREATE com/sem referencia, GET by ID, GET list, UPDATE, cálculos corretos. Bug corrigido no UPDATE endpoint que não incluía referencia no doc de atualização."
+
+  - task: "Campo Referência de Produção em Lançamentos"
+    implemented: true
+    working: true
+    file: "backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Campo 'referencia' (Optional) adicionado ao create_lancamento e persistido no Supabase (coluna referencia adicionada via SQL). Update NAO grava referencia para preservar valor ao editar."
+      - working: true
+        agent: "testing"
+        comment: "Todos os testes passaram: cria/persiste/retorna referencia; regressao sem referencia OK; calculos corretos."
+
 frontend:
+  - task: "Campo Referência de Produção (Novo Lançamento)"
+    implemented: true
+    working: true
+    file: "frontend/src/pages/NovoLancamento.js"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+      - working: true
+        agent: "main"
+        comment: "Caixa verde 'Referência de Produção' adicionada apos Orelha/Aparas, placeholder 'Ex: Produção para Cliente X'. Verificado por screenshot."
+
   - task: "Página de Variáveis"
     implemented: true
     working: true
@@ -205,7 +244,7 @@ frontend:
 metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 1
+  test_sequence: 2
   run_ui: false
 
 test_plan:
@@ -213,6 +252,7 @@ test_plan:
     - "API de Variáveis"
     - "API de Lançamentos com filtros"
     - "API de Relatórios"
+    - "Campo Referência de Produção"
   stuck_tasks: []
   test_all: false
   test_priority: "high_first"
@@ -222,3 +262,5 @@ agent_communication:
     message: "Backend implementado com todas as APIs necessárias. Testar endpoints de variáveis, lançamentos e relatórios."
   - agent: "main"
     message: "CORREÇÃO APLICADA: Fórmula de % Perdas corrigida de (Perdas/(Produção+Perdas)*100) para (Perdas/Produção*100) em todos os endpoints (lancamentos, relatorios) e no Dashboard frontend."
+  - agent: "testing"
+    message: "✅ FEATURE TESTADA: Campo 'referencia' em Lançamentos - Todos os 5 testes passaram (CREATE com/sem referencia, GET by ID, GET list, cálculos, UPDATE). Bug encontrado e corrigido: UPDATE endpoint não incluía 'referencia' no doc de atualização (linha 331 server.py). Após correção, todos os testes passaram incluindo capacidade de atualizar o valor de referencia."
