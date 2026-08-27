@@ -115,14 +115,13 @@ function Lancamentos() {
       : 'Histórico Completo';
     const tipoVisualizacao = consolidado ? ' (Consolidado por Dia)' : '';
     const cabecalhos = consolidado
-      ? `<th>Data</th><th>Turnos</th><th>Lançamentos</th><th>Produção (kg)</th><th>Perdas (kg)</th><th>% Perdas</th>`
-      : `<th>Data/Hora</th><th>Turno</th><th>Produção (kg)</th><th>Perdas (kg)</th><th>% Perdas</th>`;
+      ? `<th>Data</th><th>Turnos</th><th>Produção (kg)</th><th>Perdas (kg)</th><th>% Perdas</th>`
+      : `<th>Data/Hora</th><th>Referência</th><th>Turno</th><th>Produção (kg)</th><th>Perdas (kg)</th><th>% Perdas</th>`;
     const linhas = consolidado
       ? lancamentosExibidos.map(lanc => `
         <tr>
           <td>${formatarData(lanc.data)}</td>
           <td>${lanc.turnos || '-'}</td>
-          <td>${lanc.quantidade_lancamentos}</td>
           <td>${formatarKg(lanc.producao_total)}</td>
           <td>${formatarKg(lanc.perdas_total)}</td>
           <td>${lanc.percentual_perdas || 0}%</td>
@@ -131,6 +130,7 @@ function Lancamentos() {
       : lancamentosExibidos.map(lanc => `
         <tr>
           <td>${formatarData(lanc.data)} ${formatarHora(lanc.hora)}</td>
+          <td>${lanc.referencia || '-'}</td>
           <td>${lanc.turno}</td>
           <td>${formatarKg(lanc.producao_total)}</td>
           <td>${formatarKg(lanc.perdas_total)}</td>
@@ -176,13 +176,13 @@ function Lancamentos() {
 
   const exportarHistoricoExcel = () => {
     let csv = consolidado
-      ? `Data;Turnos;Lançamentos;Produção (kg);Perdas (kg);% Perdas\n`
-      : `Data;Hora;Turno;Produção (kg);Perdas (kg);% Perdas\n`;
+      ? `Data;Turnos;Produção (kg);Perdas (kg);% Perdas\n`
+      : `Data;Hora;Referência;Turno;Produção (kg);Perdas (kg);% Perdas\n`;
     lancamentosExibidos.forEach(lanc => {
       if (consolidado) {
-        csv += `${formatarData(lanc.data)};${lanc.turnos || '-'};${lanc.quantidade_lancamentos};${formatarKg(lanc.producao_total)};${formatarKg(lanc.perdas_total)};${lanc.percentual_perdas || 0}%\n`;
+        csv += `${formatarData(lanc.data)};${lanc.turnos || '-'};${formatarKg(lanc.producao_total)};${formatarKg(lanc.perdas_total)};${lanc.percentual_perdas || 0}%\n`;
       } else {
-        csv += `${formatarData(lanc.data)};${formatarHora(lanc.hora)};${lanc.turno};${formatarKg(lanc.producao_total)};${formatarKg(lanc.perdas_total)};${lanc.percentual_perdas || 0}%\n`;
+        csv += `${formatarData(lanc.data)};${formatarHora(lanc.hora)};${lanc.referencia || '-'};${lanc.turno};${formatarKg(lanc.producao_total)};${formatarKg(lanc.perdas_total)};${lanc.percentual_perdas || 0}%\n`;
       }
     });
     const blob = new Blob(["\ufeff" + csv], { type: 'text/csv;charset=utf-8;' });
@@ -310,7 +310,6 @@ function Lancamentos() {
                     <>
                       <th>Data</th>
                       <th>Turnos</th>
-                      <th>Lançamentos</th>
                       <th>Produção</th>
                       <th>Perdas</th>
                       <th>% Perdas</th>
@@ -318,6 +317,7 @@ function Lancamentos() {
                   ) : (
                     <>
                       <th>Lançamento</th>
+                      <th>Referência</th>
                       <th>Turno</th>
                       <th>Produção</th>
                       <th>Perdas</th>
@@ -344,9 +344,6 @@ function Lancamentos() {
                             ) : null
                           ))}
                         </td>
-                        <td style={{fontWeight: '600', color: '#667eea'}}>
-                          {lanc.quantidade_lancamentos}
-                        </td>
                         <td style={{fontWeight: '600', color: '#48bb78'}}>
                           {formatarKg(lanc.producao_total)} kg
                         </td>
@@ -365,6 +362,13 @@ function Lancamentos() {
                           <div style={{fontWeight: '600'}}>
                             {formatarData(lanc.data)} - {formatarHora(lanc.hora)}
                           </div>
+                        </td>
+                        <td>
+                          {lanc.referencia ? (
+                            <span style={{color: '#1e40af', fontWeight: '500'}}>{lanc.referencia}</span>
+                          ) : (
+                            <span style={{color: '#a0aec0'}}>-</span>
+                          )}
                         </td>
                         <td>
                           <span className="badge badge-success">{lanc.turno}</span>
