@@ -115,6 +115,7 @@ def criar_lancamento():
             "hora": data.get('hora') or datetime.now().strftime("%H:%M"),
             "orelha_kg": float(data.get('orelha_kg', 0) or 0),
             "aparas_kg": float(data.get('aparas_kg', 0) or 0),
+            "referencia": data.get('referencia'),
             "producao_total": producao_total,
             "perdas_total": perdas_total,
             "percentual_perdas": percentual_perdas,
@@ -240,6 +241,7 @@ def atualizar_lancamento(lancamento_id):
             "hora": data.get('hora'),
             "orelha_kg": float(data.get('orelha_kg', 0) or 0),
             "aparas_kg": float(data.get('aparas_kg', 0) or 0),
+            "referencia": data.get('referencia'),
             "producao_total": producao_total,
             "perdas_total": perdas_total,
             "percentual_perdas": percentual_perdas
