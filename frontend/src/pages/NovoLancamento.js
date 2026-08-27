@@ -201,8 +201,8 @@ function NovoLancamento() {
 
           <div style={{
             marginTop: '20px',
-            background: '#f0fdf4',
-            border: '1px solid #bbf7d0',
+            background: '#eff6ff',
+            border: '1px solid #bfdbfe',
             borderRadius: '12px',
             padding: '20px'
           }}>
@@ -210,7 +210,7 @@ function NovoLancamento() {
               display: 'block',
               fontSize: '16px',
               fontWeight: '600',
-              color: '#16a34a',
+              color: '#2563eb',
               marginBottom: '10px'
             }}>
               Referência de Produção
@@ -224,7 +224,7 @@ function NovoLancamento() {
                 width: '100%',
                 padding: '12px 14px',
                 fontSize: '15px',
-                border: '2px solid #22c55e',
+                border: '2px solid #3b82f6',
                 borderRadius: '8px',
                 outline: 'none',
                 boxSizing: 'border-box'
@@ -346,12 +346,12 @@ function NovoLancamento() {
         </div>
 
         {/* Pré-visualização */}
-        <div style={{background: '#dcfce7', borderRadius: '12px', padding: '20px', border: '1px solid #86efac'}}>
+        <div style={{background: '#dbeafe', borderRadius: '12px', padding: '20px', border: '1px solid #93c5fd'}}>
           {/* Header */}
           <div className="preview-header" style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px'}}>
             <div style={{display: 'flex', alignItems: 'center', gap: '10px'}}>
-              <Eye size={22} style={{color: '#16a34a'}} />
-              <span style={{fontSize: '20px', fontWeight: '600', color: '#16a34a'}}>Pré-visualização do Lançamento</span>
+              <Eye size={22} style={{color: '#2563eb'}} />
+              <span style={{fontSize: '20px', fontWeight: '600', color: '#2563eb'}}>Pré-visualização do Lançamento</span>
             </div>
           </div>
 
