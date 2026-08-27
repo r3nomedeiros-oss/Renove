@@ -168,7 +168,7 @@ backend:
     file: "backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: true
         agent: "main"
@@ -179,6 +179,9 @@ backend:
       - working: true
         agent: "main"
         comment: "PUT /lancamentos/{id} agora tambem grava referencia (para suportar edicao pela tela Editar Lancamento). Precisa retestar UPDATE."
+      - working: true
+        agent: "testing"
+        comment: "E2E SAVE behavior testado com sucesso. TEST A (EDIT): Editado lancamento 27/08/2026 'Roberto' para 'Roberto Editado' - PUT request incluiu referencia no payload, navegacao bem-sucedida, persistencia verificada apos reload. TEST B (CREATE): Criado novo lancamento com referencia 'Nova Ref Teste' - POST request incluiu referencia no payload, navegacao bem-sucedida, referencia exibida corretamente na coluna REFERÊNCIA. Ambos testes PASSED sem erros de console ou rede."
 
 frontend:
   - task: "Campo Referência de Produção (Novo Lançamento)"
