@@ -21,6 +21,7 @@ function NovoLancamento() {
     hora: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }),
     orelha_kg: '',
     aparas_kg: '',
+    referencia: '',
     itens: [
       { formato: '', cor: '', pacote_kg: '', producao_kg: '' }
     ]
@@ -195,6 +196,42 @@ function NovoLancamento() {
                 required
                 placeholder="0,00"
               />
+            </div>
+          </div>
+
+          <div style={{
+            marginTop: '20px',
+            background: '#f0fdf4',
+            border: '1px solid #bbf7d0',
+            borderRadius: '12px',
+            padding: '20px'
+          }}>
+            <label style={{
+              display: 'block',
+              fontSize: '16px',
+              fontWeight: '600',
+              color: '#16a34a',
+              marginBottom: '10px'
+            }}>
+              Referência de Produção
+            </label>
+            <input
+              type="text"
+              value={lancamento.referencia}
+              onChange={(e) => setLancamento({...lancamento, referencia: e.target.value})}
+              placeholder="Ex: Produção para Cliente X"
+              style={{
+                width: '100%',
+                padding: '12px 14px',
+                fontSize: '15px',
+                border: '2px solid #22c55e',
+                borderRadius: '8px',
+                outline: 'none',
+                boxSizing: 'border-box'
+              }}
+            />
+            <div style={{fontSize: '13px', color: '#6b7280', marginTop: '8px'}}>
+              Destaque para que vai a produção
             </div>
           </div>
         </div>

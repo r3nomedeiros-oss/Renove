@@ -76,6 +76,7 @@ class LancamentoCreate(BaseModel):
     hora: Optional[str] = None
     orelha_kg: float
     aparas_kg: float
+    referencia: Optional[str] = None
     itens: List[ItemProducao]
 
 class LancamentoResponse(BaseModel):
@@ -86,6 +87,7 @@ class LancamentoResponse(BaseModel):
     hora: Optional[str] = None
     orelha_kg: float = 0
     aparas_kg: float = 0
+    referencia: Optional[str] = None
     producao_total: Optional[float] = 0
     perdas_total: Optional[float] = 0
     percentual_perdas: Optional[float] = 0
@@ -280,6 +282,7 @@ async def create_lancamento(lancamento: LancamentoCreate):
             "hora": lancamento.hora or datetime.now().strftime("%H:%M"),
             "orelha_kg": lancamento.orelha_kg,
             "aparas_kg": lancamento.aparas_kg,
+            "referencia": lancamento.referencia,
             "producao_total": producao_total,
             "perdas_total": perdas_total,
             "percentual_perdas": percentual_perdas,
